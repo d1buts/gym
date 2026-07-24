@@ -1,0 +1,32 @@
+{
+  "source_path": "/home/muuser/bushuk-labs/gym/gym equipment/all gym exercises.md",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "Повний список вправ, доступних у спортзалі",
+  "summary": "Master catalog of practical exercise variations supported by the gym’s available cardio, strength, cable, free-weight, suspension, plyometric, and conditioning equipment.",
+  "scope": [
+    "gym exercises",
+    "cardio machines",
+    "cable machines",
+    "strength machines",
+    "power rack and barbell",
+    "dumbbells",
+    "kettlebells",
+    "CoreBags",
+    "medicine balls and slam balls",
+    "battle ropes",
+    "TRX",
+    "plyometric boxes",
+    "bodyweight exercises",
+    "speed and agility track",
+    "exercise complexes"
+  ],
+  "cross_refs": [
+    "gym equipment list.md",
+    "./gym%20equipment%20list.md"
+  ],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

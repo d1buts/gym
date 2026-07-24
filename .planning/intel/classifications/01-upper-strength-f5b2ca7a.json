@@ -1,0 +1,25 @@
+{
+  "source_path": "/home/muuser/bushuk-labs/gym/4-day upper lower program/01 upper strength.md",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "Day 1 — Upper Strength",
+  "summary": "A timed upper-body strength session specifying warm-up, paired exercise blocks, set and repetition targets, RIR, rest periods, and optional volume reductions.",
+  "scope": [
+    "upper-body strength workout",
+    "warm-up",
+    "bench press",
+    "cable curl",
+    "lat pulldown",
+    "cable pushdown",
+    "shoulder press",
+    "seated row",
+    "lateral raise",
+    "face pull",
+    "rest intervals"
+  ],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

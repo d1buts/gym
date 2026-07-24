@@ -1,0 +1,23 @@
+docs:
+  - path: WORKOUT_TRACKER_ARCHITECTURE.md
+    type: SPEC
+  - path: 4-day upper lower program/README.md
+    type: DOC
+  - path: 4-day upper lower program/01 upper strength.md
+    type: DOC
+  - path: 4-day upper lower program/02 lower strength.md
+    type: DOC
+  - path: 4-day upper lower program/03 upper hypertrophy.md
+    type: DOC
+  - path: 4-day upper lower program/04 lower hypertrophy.md
+    type: DOC
+  - path: 4-day upper lower program/05 progression and session rules.md
+    type: SPEC
+  - path: gym equipment/all gym exercises.md
+    type: DOC
+  - path: gym equipment/exercise categories.md
+    type: DOC
+  - path: gym equipment/exercises by category.md
+    type: DOC
+  - path: gym equipment/gym equipment list.md
+    type: DOC

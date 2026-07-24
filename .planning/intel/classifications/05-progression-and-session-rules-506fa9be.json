@@ -1,0 +1,22 @@
+{
+  "source_path": "/home/muuser/bushuk-labs/gym/4-day upper lower program/05 progression and session rules.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "Progression and Session Rules",
+  "summary": "Specifies deterministic load-progression gates, evidence thresholds for rule-changing recommendations, paired-set exclusions, and 60-minute session prioritization.",
+  "scope": [
+    "double progression",
+    "recommendation evidence thresholds",
+    "RIR and technique eligibility",
+    "strength, hypertrophy, and isolation exercises",
+    "paired sets",
+    "symptom stop criteria",
+    "60-minute session timebox",
+    "block-cut priorities"
+  ],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

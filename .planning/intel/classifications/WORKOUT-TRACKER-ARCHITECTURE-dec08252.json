@@ -1,0 +1,41 @@
+{
+  "source_path": "/home/muuser/bushuk-labs/gym/WORKOUT_TRACKER_ARCHITECTURE.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "Workout Tracker: архітектура v1",
+  "summary": "Визначає контракт архітектури v1 для read-only синхронізації Google Sheets, ідемпотентного SQLite-дзеркала, версійованих метрик, evidence-звітів, приватності, backup і restore.",
+  "scope": [
+    "Google Sheets",
+    "Python 3.12+ CLI",
+    "immutable raw snapshots",
+    "validation and quarantine",
+    "deterministic normalization",
+    "SQLite analytical mirror",
+    "source revision history and tombstones",
+    "versioned metrics and evidence lineage",
+    "reproducible reports",
+    "security and privacy controls",
+    "encrypted backup and isolated restore"
+  ],
+  "cross_refs": [
+    "docs/architecture/ARCHITECTURE_REVIEW.md",
+    "config/schema.yaml",
+    ".planning/PROJECT.md",
+    ".planning/REQUIREMENTS.md",
+    "docs/architecture/ADR-001-authority-boundaries.md",
+    "docs/architecture/DATA_MODEL.md",
+    "docs/architecture/SYNC_PROTOCOL.md",
+    "docs/architecture/METRICS.md",
+    "config/progression-rules.yaml",
+    "docs/architecture/SECURITY_AND_BACKUP.md",
+    "docs/architecture/ADR-002-python-sqlite-v1.md",
+    ".planning/ROADMAP.md",
+    "settings.example.yaml",
+    "AGENTS.md",
+    "README.md"
+  ],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

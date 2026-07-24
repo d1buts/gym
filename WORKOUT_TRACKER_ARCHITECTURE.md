@@ -1,485 +1,419 @@
-# Workout Tracker: архітектура та план розвитку
+# Workout Tracker: архітектура v1
 
-## 1. Мета проєкту
+**Status:** implementation contract
 
-Створити персональну систему трекінгу тренувань, яка:
+**Updated:** 2026-07-24
 
-- дозволяє швидко записувати тренування через ChatGPT або з телефона;
-- зберігає програму, тренувальні сесії та кожен окремий підхід;
-- показує прогрес за обсягом, робочою вагою, відпочинком і самопочуттям;
-- накопичує структуровані дані для подальшої аналітики;
-- допомагає приймати рішення щодо ваги, повторів, підходів, відновлення та зміни програми;
-- не прив'язує дані назавжди до одного сервісу;
-- у майбутньому може стати основою мобільного застосунку або персонального AI-тренера.
+**Runtime:** Python 3.12+ local CLI
+**Current milestone:** read-only sync, analytics, evidence report and restore
 
-## 2. Основне архітектурне рішення
+Цей документ є оглядом системи. Нормативні деталі розміщені в
+[docs/architecture](docs/architecture/ARCHITECTURE_REVIEW.md), машинозчитувані
+контракти — у [config](config/schema.yaml), а scope і delivery order — у
+[.planning](.planning/PROJECT.md).
 
-Проєкт використовуватиме гібридну архітектуру:
+## 1. Мета
 
-- **Google Sheets** — головне місце з актуальними тренувальними даними та простий мобільний інтерфейс.
-- **Локальний Codex-проєкт** — код синхронізації, аналітика, правила рекомендацій, документація і тести.
-- **Git** — історія змін коду, конфігурації, документації та логіки аналізу.
-- **CSV, JSON або локальна база даних** — переносні локальні представлення даних для обробки та резервування.
+Workout Tracker повинен однією повторюваною CLI-командою:
+
+1. безпечно прочитати авторитетні дані з Google Sheets;
+2. перевірити контракт і якість рядків;
+3. створити immutable raw snapshot;
+4. побудувати ідемпотентне SQLite-дзеркало;
+5. обчислити версійовані метрики;
+6. створити відтворюваний звіт із evidence lineage;
+7. довести, що backup відновлюється.
+
+Система не повинна вигадувати пропущені значення, змішувати непорівнювані
+вправи або подавати медичний висновок як тренувальну аналітику.
+
+## 2. Scope v1
+
+### Входить
+
+- exact schema validation чотирьох вкладок;
+- read-only Google Sheets pull;
+- immutable snapshots і quarantine evidence;
+- deterministic normalization;
+- SQLite current projection, history і tombstones;
+- історія за workout type, exercise і date range;
+- working-set, repetition, load, e1RM, RIR, rest і recovery metrics;
+- one-command evidence report;
+- repository privacy check;
+- portable backup та isolated restore verification.
+
+### Не входить
+
+- workout capture у Google Sheets;
+- будь-який write-back;
+- generated progression або AI recommendations;
+- автоматична зміна програми;
+- Telegram, mobile, web, voice або wearable UI;
+- multi-user, authentication і server database;
+- медичні діагнози, лікування чи medication advice.
+
+Повний scope: [.planning/REQUIREMENTS.md](.planning/REQUIREMENTS.md).
+
+## 3. Джерела правди
+
+Кожен клас інформації має одного власника.
+
+| Інформація | Власник | Локальна роль |
+|---|---|---|
+| Виконані сесії та підходи | Google Sheets | Immutable snapshot і rebuildable mirror |
+| Operational program versions | Google Sheets `Програма` | Validated versioned projection |
+| Зовнішні recommendations | Google Sheets `Рекомендації` | Read-only history |
+| Sheet schema і normalization | Git `config/schema.yaml` | Executable contract |
+| Progression rules і formulas | Git `config/` та architecture specs | Versioned executable rules |
+| Metrics і reports | Локальний код | Derived, reproducible artifacts |
+| SQLite | Ніхто як primary owner | Rebuildable analytical store |
+
+Подробиці й наслідки:
+[ADR-001](docs/architecture/ADR-001-authority-boundaries.md).
+
+## 4. System context
 
 ```mermaid
 flowchart LR
-    A["ChatGPT або телефон"] --> B["Google Sheets — основна база"]
-    B --> C["Локальний проєкт Codex"]
-    C --> D["Аналітика та рекомендації"]
-    C --> E["CSV / JSON / локальна база"]
-    C --> F["Git — код та історія змін"]
-    D --> B
+    U["Користувач / телефон"] --> G["Google Sheets"]
+    G --> P["Read-only pull"]
+    P --> R["Immutable raw snapshot"]
+    R --> V["Validation + quarantine"]
+    V --> N["Versioned normalization"]
+    N --> S["SQLite staging"]
+    S --> M["Atomic mirror promotion"]
+    M --> A["Metrics"]
+    A --> O["Evidence-backed report"]
+    R --> B["Encrypted backup"]
+    B --> X["Isolated restore verification"]
 ```
 
-## 3. Джерело правди
+V1 не має стрілки назад у Google Sheets.
 
-Google Sheets залишається **єдиним джерелом правди для тренувальних даних**.
+## 5. Google Sheets contract
 
-Це означає:
+Очікуються рівно чотири operational tabs:
 
-- нові тренування спочатку записуються в Google Sheets;
-- виправлення фактичних даних виконуються в Google Sheets;
-- локальні CSV, JSON і база даних є копіями для аналізу, а не незалежними версіями тих самих записів;
-- локальний код може записувати назад рекомендації та розраховані результати, але не повинен непомітно перезаписувати первинні дані;
-- кожна синхронізація повинна бути повторюваною та не створювати дублікати.
+- `Програма`;
+- `Сесії`;
+- `Підходи`;
+- `Рекомендації`.
 
-Такий підхід зменшує ризик конфліктів між локальною та онлайн-версіями.
+Українські labels є authoritative. English values на кшталт
+`upper_strength` — лише internal aliases.
 
-## 4. Google Sheets
+Дозволені workout types:
 
-Поточна таблиця:
+| Source label | Internal code |
+|---|---|
+| `Верх — сила` | `upper_strength` |
+| `Низ — сила` | `lower_strength` |
+| `Верх — гіпертрофія` | `upper_hypertrophy` |
+| `Низ — гіпертрофія` | `lower_hypertrophy` |
 
-[Мій трекер тренувань](https://docs.google.com/spreadsheets/d/15TqKmdooX0XFsNi-Qh7LmFUK_E-i2x_U47OgJNn3Xn0/edit)
+Required stable identities:
 
-### Роль Google Sheets
+- `program_item_id`;
+- `session_id`;
+- `set_id`;
+- `recommendation_id`.
 
-Google Sheets використовується для:
+Row number, date, exercise name, set ordinal і content hash не можуть бути
+identity. Existing rows without IDs require a one-time reviewed migration
+while the Sheet is frozen.
 
-- внесення тренувань через ChatGPT;
-- ручного введення або виправлення даних з телефона чи комп'ютера;
-- швидкого перегляду попередніх тренувань;
-- фільтрації за типом тренування та вправою;
-- базових формул і графіків;
-- зберігання рекомендацій та історії прийнятих рішень;
-- експорту даних в Excel, CSV та інші формати.
+Повний field/type/null/unit contract:
+[DATA_MODEL.md](docs/architecture/DATA_MODEL.md) і
+[schema.yaml](config/schema.yaml).
 
-### Основні вкладки
+## 6. Data model principles
 
-#### `Старт`
+### Identity and revision
 
-Коротка інструкція та приклад повідомлення для запису тренування через ChatGPT.
+Source-owned identity не змінюється при factual correction. Змінений payload
+створює нову immutable revision під тим самим ID.
 
-#### `Програма`
+```text
+source identity → immutable content revision → snapshot occurrence
+```
 
-Опис чотирьох повторюваних тренувань:
+Кожна occurrence зберігає:
 
-- Верх — сила;
-- Низ — сила;
-- Верх — гіпертрофія;
-- Низ — гіпертрофія.
+- `snapshot_id`;
+- source tab і numeric sheet ID;
+- diagnostic row locator;
+- raw row hash;
+- schema і normalizer versions;
+- validation outcome.
 
-Для кожної вправи зберігаються цільові підходи, діапазон повторів, RIR, відпочинок, крок збільшення ваги, пріоритет і технічні нотатки.
+### Program history
 
-#### `Сесії`
+Кожна нова session має `program_version_id`. Уже використану program version
+не редагують: створюють нову.
 
-Один рядок відповідає одному завершеному тренуванню.
+### Logical sets
 
-Сесія містить:
+Один set може бути:
 
-- унікальний ID;
-- дату і тип тренування;
-- тривалість;
-- масу тіла;
-- сон;
-- енергію;
-- стрес;
-- крепатуру;
-- суб'єктивну результативність;
-- автоматичні підсумки робочих підходів;
-- нотатки і прапорці ризику.
+- bilateral;
+- однаковий `each_side`;
+- окремий `left` і `right`;
+- repetition-based;
+- duration-based.
 
-#### `Підходи`
+Тому set складається з logical header і одного або кількох components.
+Bulgarian split squat для правої та лівої ноги залишається одним prescribed
+set, а side plank зберігає seconds, не fake reps.
 
-Один рядок відповідає одному підходу.
+### Load
 
-Запис містить:
+Unitless load заборонений. Потрібні:
 
-- ID сесії;
-- дату і тип тренування;
-- вправу та групу м'язів;
-- номер і тип підходу;
-- вагу;
-- повтори;
-- RIR;
-- відпочинок;
-- обсяг;
-- орієнтовний e1RM;
-- біль;
-- оцінку техніки;
-- нотатки.
+- `load_value`;
+- `load_unit`;
+- `load_basis`;
+- `loading_kind`;
+- `implement_count`;
+- exact exercise variant, equipment і setup/comparison cohort.
 
-Зв'язок через `ID сесії` дозволяє агрегувати будь-яке тренування, вправу або період.
+Machine display, free-weight total, per-dumbbell load і assistance не
+змішуються.
 
-#### `Прогрес`
+## 7. Pull and reconciliation protocol
 
-Містить основні показники і графіки:
+```text
+exclusive lock
+→ preflight
+→ source version before
+→ coherent four-tab capture
+→ source version after
+→ immutable snapshot commit
+→ validate and quarantine
+→ deterministic normalize
+→ stage and diff
+→ atomic SQLite promotion
+→ manifest and audit summary
+```
 
-- кількість сесій;
-- середній обсяг;
-- максимальну робочу вагу;
-- середній відпочинок;
-- середню результативність;
-- тенденції самопочуття і відновлення.
+Ключові гарантії:
 
-#### `Рекомендації`
+- credentials мають read-only scope;
+- source version change під час capture скасовує attempt;
+- partial capture ніколи не отримує `COMPLETE`;
+- invalid session або child set quarantine-ить увесь session bundle;
+- rejected authoritative entity за замовчуванням не дозволяє замінити active
+  mirror;
+- repeated identical snapshot не створює domain/history versions;
+- correction під тим самим ID створює одну revision;
+- coherent disappearance створює tombstone, але не стирає history;
+- mirror tables і `current_snapshot_id` змінюються однією транзакцією;
+- failure залишає попередній complete mirror активним.
 
-Журнал рішень, сформованих людиною або LLM.
+Нормативний protocol:
+[SYNC_PROTOCOL.md](docs/architecture/SYNC_PROTOCOL.md).
 
-Для кожної рекомендації зберігаються:
+## 8. Local storage
 
-- дата аналізу;
-- сфера аналізу;
-- вправа або тип тренування;
-- виявлений сигнал;
-- докази з даних;
-- рекомендація;
-- впевненість;
-- дата повторної перевірки.
+```text
+data/
+├── raw/<snapshot_id>/       immutable source capture
+├── processed/               rebuildable normalized exports
+├── quarantine/              diagnostics, not active data
+├── backups/                 encrypted portable archives
+└── workout-tracker.sqlite   rebuildable analytical store
+```
 
-Це робить роботу AI-тренера прозорою та перевірюваною.
+Raw snapshot завершується content hashes, manifest і `COMPLETE` marker.
+Consumers не читають `.staging` або snapshot без valid manifest.
 
-## 5. Чому не потрібно зберігати Google Sheet безпосередньо в Git
+SQLite містить:
 
-Google Drive for Desktop показує нативні Google-таблиці локально як файли `.gsheet`. Такий файл є переважно посиланням на онлайн-документ, а не повною локальною копією його даних.
+- current source projections;
+- immutable source revision history;
+- snapshot occurrences;
+- quarantine diagnostics;
+- metric results and evidence;
+- sync run ledger;
+- active mirror head.
 
-Через це:
+Source facts і derived metrics перебувають у різних tables.
 
-- `.gsheet` не підходить для нормального порівняння змін у Git;
-- він не є надійною резервною копією;
-- його не слід використовувати як вхідний файл для локальної аналітики;
-- зміни формул, клітинок і графіків не відображаються у Git як зрозумілий diff.
+## 9. Metrics
 
-Git має зберігати код і декларативні правила, а тренувальні дані потрібно отримувати через Google Sheets API або контрольований експорт.
+`Volume` не є одним числом. V1 окремо визначає:
 
-## 6. Рекомендована структура локального проєкту
+- completed working-set count;
+- repetition volume;
+- eligible load volume;
+- primary muscle-group set volume.
+
+Додатково:
+
+- maximum load порівнюється лише в одному comparison cohort;
+- e1RM використовує `epley-v1`, working sets і 1–12 reps;
+- missing або ambiguous inputs дають `NULL` зі status/reason;
+- timed, bodyweight, assistance й incomparable machine work не стають
+  нульовим tonnage;
+- RIR не вгадується;
+- rest means `rest_after_set_seconds`, а `between_sides_seconds` зберігається
+  окремо;
+- recovery comparisons у v1 є descriptive, не causal.
+
+Кожна metric зберігає formula version, canonical parameters, input IDs,
+included/excluded evidence та exclusion reasons.
+
+Нормативні формули:
+[METRICS.md](docs/architecture/METRICS.md).
+
+## 10. Reports and reproducibility
+
+Report identity визначається:
+
+- snapshot і per-tab hashes;
+- code commit;
+- source schema, normalizer, taxonomy, program і formula versions;
+- canonical CLI parameters;
+- timezone і deterministic ordering.
+
+Generated timestamp і output path не входять до substantive hash.
+
+Однакові inputs і versions мають давати однаковий substantive report hash.
+Зміна одного set повинна змінити лише metrics, що посилаються на цей set у
+dependency evidence.
+
+## 11. Progression and recommendations
+
+V1 не генерує progression output.
+
+У майбутньому:
+
+- deterministic standard step є pure versioned rule;
+- одне session occurrence достатнє лише після повної перевірки prescribed
+  sets, reps, RIR, technique, pain, program version, comparison cohort та
+  configured increment;
+- analytical program change потребує щонайменше трьох comparable session
+  occurrences;
+- trend evidence: менше 6 — insufficient, 6–7 — provisional, 8+ — normal;
+- missing pain, technique або RIR не означає pass.
+
+Ruleset:
+[progression-rules.yaml](config/progression-rules.yaml).
+
+## 12. Security and privacy
+
+- Немає live Sheet locator у tracked config або docs.
+- Tokens зберігаються в OS secure storage або viewer-only service-account
+  credential file поза репозиторієм.
+- Core v1 запитує тільки Sheets read-only access.
+- Local data directories мають private permissions.
+- Logs не містять tokens, notes, symptoms, body mass, Sheet locators або raw
+  rows.
+- Personal workout data не надсилаються до LLM або telemetry у v1.
+- `.gitignore` виключає credentials, exports, SQLite, reports, logs, backups
+  і local GSD attempts.
+
+Security audit виявив operational metadata в уже опублікованій історії.
+Current-file cleanup не стирає history; remote remediation потребує explicit
+owner authorization.
+
+Повна policy:
+[SECURITY_AND_BACKUP.md](docs/architecture/SECURITY_AND_BACKUP.md).
+
+## 13. Backup and restore
+
+V1 policy:
+
+- RPO не більше 24 hours;
+- backup після кожного successful validated pull і щонайменше daily;
+- 35 daily та 12 month-end verified backups;
+- дві encrypted copies у різних fault domains;
+- full isolated restore test щонайменше weekly.
+
+Restore працює offline в empty directory, перевіряє manifest/checksums,
+перебудовує новий SQLite, запускає foreign-key/integrity checks і canary
+metric/report hash. Неповний або змінений archive завершується nonzero й не
+публікує database як successful.
+
+Restore-to-Google-Sheets не входить до v1.
+
+## 14. Technology and repository layout
+
+Stack decision:
+[ADR-002](docs/architecture/ADR-002-python-sqlite-v1.md).
 
 ```text
 workout-tracker/
-├── README.md
-├── WORKOUT_TRACKER_ARCHITECTURE.md
+├── .planning/
 ├── config/
-│   ├── program.yaml
+│   ├── schema.yaml
 │   ├── progression-rules.yaml
 │   └── settings.example.yaml
+├── docs/architecture/
 ├── src/
+│   ├── source/
 │   ├── sync/
-│   │   ├── pull-from-sheets.*
-│   │   ├── push-recommendations.*
-│   │   └── validate-sync.*
+│   ├── storage/
 │   ├── analytics/
-│   │   ├── session-metrics.*
-│   │   ├── exercise-progress.*
-│   │   ├── fatigue-signals.*
-│   │   └── weekly-volume.*
-│   └── recommendations/
-│       ├── progression-engine.*
-│       ├── evidence-builder.*
-│       └── recommendation-log.*
-├── data/
-│   ├── raw/
-│   ├── processed/
-│   └── backups/
-├── reports/
+│   └── reporting/
+├── data/             # ignored
+├── reports/          # generated and ignored
 ├── tests/
-├── scripts/
 ├── .env.example
 ├── .gitignore
-└── LICENSE
+├── AGENTS.md
+└── README.md
 ```
 
-Розширення файлів у `src/` буде вибране після рішення щодо мови реалізації. Для цього проєкту однаково придатні Python і TypeScript. Python зручніший для статистики й аналізу даних; TypeScript може бути зручнішим, якщо майбутній інтерфейс буде вебзастосунком.
-
-## 7. Що зберігати в Git
-
-У Git потрібно зберігати:
-
-- код синхронізації;
-- код аналітики;
-- правила прогресії;
-- схему таблиць і локальної бази;
-- конфігураційні шаблони;
-- документацію;
-- тести;
-- шаблони звітів;
-- анонімізовані або синтетичні приклади даних.
-
-У Git не потрібно зберігати:
-
-- ключі доступу до Google API;
-- OAuth-токени;
-- файли `.env` із секретами;
-- особисті дані в публічному репозиторії;
-- автоматично створені кеші;
-- кожен проміжний CSV-експорт;
-- великі резервні копії, якщо для них немає окремої політики зберігання.
-
-Навіть приватний репозиторій не повинен містити секрети доступу.
-
-## 8. Синхронізація
-
-### Основний напрямок
-
-```text
-Google Sheets → локальні дані → аналітика → рекомендації → Google Sheets
-```
-
-### Отримання даних
-
-Локальний проєкт повинен уміти:
-
-1. Прочитати вкладки `Програма`, `Сесії`, `Підходи` і `Рекомендації`.
-2. Перевірити заголовки та типи даних.
-3. Зберегти незмінну копію отриманих даних у `data/raw/`.
-4. Нормалізувати дати, числа, назви вправ та ID.
-5. Побудувати оброблені набори даних у `data/processed/`.
-6. Не створювати дублікати при повторному запуску.
-
-### Запис результатів назад
-
-На першому етапі локальний код повинен записувати назад лише:
-
-- нові рядки у `Рекомендації`;
-- заздалегідь визначені розраховані поля;
-- технічний статус останньої синхронізації, якщо буде створена відповідна вкладка.
-
-Первинні записи тренувань не повинні автоматично масово перезаписуватися без явного підтвердження.
-
-### Ідентифікатори та захист від дублікатів
-
-Кожна сесія повинна мати стабільний `ID сесії`. Усі підходи цієї сесії використовують той самий ID.
-
-Під час синхронізації потрібно:
-
-- перевіряти, чи вже існує ID;
-- оновлювати лише дозволені поля;
-- вести журнал синхронізації;
-- не покладатися лише на номер рядка, оскільки рядки можуть сортуватися або переміщуватися.
-
-## 9. Локальні формати даних
-
-### CSV
-
-Підходить для:
-
-- швидкого експорту;
-- аналізу в Python або R;
-- перенесення між системами;
-- завантаження у бази даних.
-
-Один CSV відповідає одній вкладці. CSV не зберігає формули, графіки, форматування або зв'язки між файлами.
-
-### JSON
-
-Підходить для:
-
-- API;
-- мобільного застосунку;
-- вкладених структур;
-- обміну даними з LLM;
-- збереження результатів аналізу разом із метаданими.
-
-### Excel `.xlsx`
-
-Підходить для:
-
-- повної ручної резервної копії;
-- збереження формул, вкладок, форматування і графіків;
-- відкриття таблиці без доступу до Google.
-
-### SQLite
-
-Може бути доданий пізніше як локальна аналітична база. Він зручний, коли CSV стає недостатньо, але окремий сервер бази даних ще не потрібний.
-
-### PostgreSQL або Supabase
-
-Доцільні після появи мобільного або вебзастосунку, кількох користувачів, авторизації чи складнішого API.
-
-## 10. Щоденний робочий процес
-
-### Після тренування
-
-Користувач надсилає ChatGPT повідомлення приблизно такого формату:
-
-> Запиши тренування в мій трекер. Дата: 2026-07-22. Тип: Верх — гіпертрофія. Тривалість: 72 хв. Сон: 7.5 год, енергія 4/5, стрес 2/5, крепатура 2/5, результативність 4/5. Жим гантелей: 30×10 RIR2, 30×10 RIR2, 30×9 RIR1, відпочинок 120 с. Болі немає.
-
-ChatGPT повинен:
-
-1. Перевірити, що тип тренування відповідає одному з чотирьох дозволених значень.
-2. Сформувати унікальний ID сесії.
-3. Додати один рядок у `Сесії`.
-4. Додати окремий рядок для кожного підходу у `Підходи`.
-5. Не вигадувати відсутні значення.
-6. Позначити невідомі дані як порожні або попросити уточнення, якщо вони критичні.
-7. Підтвердити, що було записано.
-
-### Перед наступним тренуванням
-
-Можна попросити:
-
-> Покажи останнє тренування «Верх — гіпертрофія» і скажи, які ваги та повтори були в кожній вправі.
-
-Пізніше система також зможе формувати короткий план наступної сесії на основі програми та останніх результатів.
-
-### Періодичний аналіз
-
-Після накопичення даних можна запитувати:
-
-- аналіз прогресу конкретної вправи;
-- порівняння останніх 4–8 тренувань;
-- оцінку обсягу по групах м'язів;
-- пошук стагнації;
-- оцінку зв'язку між сном, стресом і результативністю;
-- рекомендацію щодо збільшення ваги;
-- рекомендацію щодо додаткового підходу;
-- перевірку ознак поганого відновлення;
-- оцінку доцільності заміни вправи або зміни програми.
-
-## 11. Принципи рекомендацій
-
-Система не повинна давати рекомендацію лише на основі однієї невдалої або успішної сесії.
-
-Початкові орієнтири:
-
-- щонайменше 3 виконання вправи для локального рішення щодо прогресії;
-- приблизно 6–8 повторень типу тренування для оцінки тенденції;
-- збільшення ваги розглядається, якщо верх цільового діапазону повторів виконується стабільно при цільовому RIR;
-- техніка повинна залишатися стабільною;
-- біль не повинен зростати;
-- додатковий підхід розглядається лише тоді, коли відновлення стабільне, а поточний обсяг переноситься добре;
-- падіння результативності потрібно оцінювати разом зі сном, стресом, крепатурою, RIR і болем;
-- кожна рекомендація повинна посилатися на конкретні дані;
-- кожна суттєва рекомендація повинна записуватися в журнал `Рекомендації`.
-
-Прапорці системи не є медичним діагнозом. Гострий, сильний або стійкий біль потребує оцінки кваліфікованого медичного фахівця.
-
-## 12. Резервне копіювання
-
-Рекомендована політика:
-
-- регулярний автоматичний експорт основних вкладок у CSV або JSON;
-- періодична повна резервна копія в `.xlsx`;
-- часові мітки у назвах резервних копій;
-- перевірка можливості відновлення, а не лише факту створення файлу;
-- зберігання резервних копій окремо від робочого кешу;
-- виключення резервних копій із Git, якщо вони містять особисті дані.
-
-## 13. Етапи розвитку
-
-### Етап 1. Заповнення програми
-
-- внести фактичні вправи для чотирьох тренувань;
-- визначити підходи, діапазони повторів, RIR і відпочинок;
-- узгодити кроки збільшення ваги;
-- стандартизувати назви вправ.
-
-### Етап 2. Накопичення якісних даних
-
-- регулярно записувати тренування;
-- завжди фіксувати вагу, повтори та RIR;
-- за можливості фіксувати відпочинок;
-- записувати сон, енергію, стрес, крепатуру і біль;
-- виправляти помилки введення до проведення аналізу.
-
-### Етап 3. Створення локального Git-проєкту
-
-- створити директорію проєкту;
-- ініціалізувати Git;
-- додати цей документ і `README.md`;
-- створити `.gitignore` та `.env.example`;
-- вибрати Python або TypeScript;
-- додати базову конфігурацію і тести.
-
-### Етап 4. Синхронізація Google Sheets → локальні дані
-
-- налаштувати авторизацію;
-- реалізувати читання вкладок;
-- додати перевірку схеми;
-- реалізувати ідемпотентний імпорт;
-- створити журнал синхронізації;
-- додати автоматичні резервні копії.
-
-### Етап 5. Базова аналітика
-
-- прогрес ваги, повторів та e1RM;
-- обсяг по сесіях, вправах і групах м'язів;
-- середній RIR і відпочинок;
-- тенденції самопочуття;
-- виявлення пропущених або некоректних даних.
-
-### Етап 6. Рушій рекомендацій
-
-- формалізувати правила прогресії;
-- відокремити фактичні метрики від рекомендацій;
-- додати рівень впевненості;
-- зберігати докази для кожного рішення;
-- записувати рекомендації назад у Google Sheets;
-- перевіряти результат рекомендації після наступних сесій.
-
-### Етап 7. Розширений AI-тренер
-
-- аналіз довгострокових тенденцій;
-- персоналізація правил прогресії;
-- прогнозування наступної робочої ваги;
-- раннє виявлення плато;
-- виявлення накопиченої втоми;
-- пропозиції щодо заміни вправ;
-- автоматична підготовка плану наступного тренування;
-- пояснення кожної рекомендації зрозумілою мовою.
-
-### Етап 8. Окремий інтерфейс
-
-За потреби:
-
-- Telegram-бот;
-- мобільний застосунок;
-- вебінтерфейс;
-- голосове введення;
-- інтеграція з wearable-пристроями;
-- перенесення основної бази в PostgreSQL або Supabase.
-
-Google Sheets на цьому етапі може залишитися зручним адміністративним інтерфейсом або резервним каналом доступу.
-
-## 14. Найближчі практичні кроки
-
-1. Створити локальну директорію `workout-tracker`.
-2. Скопіювати цей документ у корінь нового проєкту.
-3. Ініціалізувати приватний Git-репозиторій.
-4. Додати фактичну програму чотирьох тренувань у Google Sheets.
-5. Записати перші тренування через ChatGPT.
-6. Вибрати Python або TypeScript для локальної реалізації.
-7. Створити першу команду синхронізації Google Sheets → локальний CSV/JSON.
-8. Додати перевірку схеми та захист від дублікатів.
-9. Після накопичення даних реалізувати перший звіт прогресу.
-10. Лише після перевірки базових метрик додавати автоматичні рекомендації.
-
-## 15. Критерії успіху першої версії
-
-Перша локальна версія вважається готовою, коли:
-
-- усі тренування з Google Sheets стабільно завантажуються локально;
-- повторний запуск не створює дублікатів;
-- структура даних автоматично перевіряється;
-- можна отримати історію конкретного типу тренування або вправи;
-- можна розрахувати обсяг, максимальну вагу, e1RM, RIR і відпочинок;
-- можна створити локальний звіт без ручного копіювання даних;
-- секрети не потрапляють у Git;
-- існує перевірена резервна копія;
-- система пояснює, з яких даних отримано кожен висновок.
-
-## 16. Підсумок
-
-Google Sheets забезпечує просте щоденне введення і мобільний доступ. Локальний Codex-проєкт дає необмежені можливості для аналітики, автоматизації та розвитку AI-тренера. Git зберігає історію коду і правил, але не використовується як основне сховище живих тренувальних даних.
-
-Основний принцип проєкту:
-
-> Google Sheets зберігає факти, локальний код аналізує їх, а кожна рекомендація повинна мати зрозуміле обґрунтування.
+`src/`, `data/`, `reports/` і `tests/` створюються під час execution phases,
+а не як порожня architecture scaffold.
+
+## 15. Observability and failures
+
+Кожен run має:
+
+- `run_id` і `snapshot_id`;
+- stage durations;
+- retry counts;
+- per-tab fetched/accepted/rejected/inserted/updated/unchanged/tombstoned
+  counts;
+- stable error codes;
+- machine-readable manifest;
+- redacted human summary.
+
+Suggested exit categories:
+
+| Code | Category |
+|---:|---|
+| 0 | success/no-op/warnings |
+| 10–12 | auth, remote or unstable source |
+| 20–21 | schema/identity or quarantined data |
+| 30–31 | lock, I/O, checksum or SQLite |
+| 40 | future write precondition conflict |
+| 70 | internal invariant violation |
+
+Manifest outcome є authoritative; exit code потрібен для automation.
+
+## 16. Delivery roadmap
+
+1. Довірений контракт даних.
+2. Ідемпотентне локальне дзеркало.
+3. Історія та базова аналітика.
+4. Відтворюваний звіт із доказами.
+5. Приватність і перевірене відновлення.
+
+Критерії та traceability:
+[.planning/ROADMAP.md](.planning/ROADMAP.md).
+
+## 17. Definition of done for v1
+
+V1 готовий лише коли:
+
+- 22/22 requirements verified;
+- source migration забезпечила всі stable IDs;
+- repeat pull і row reorder не створюють logical changes;
+- correction, tombstone, quarantine і injected-failure tests проходять;
+- metric eligibility/exclusion cases покриті fixtures;
+- identical inputs дають identical substantive report hash;
+- repository safety scan проходить;
+- backup успішно відновлений у clean offline location;
+- remote public-history disclosure отримав явне owner disposition.

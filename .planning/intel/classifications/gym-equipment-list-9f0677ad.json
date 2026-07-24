@@ -1,0 +1,21 @@
+{
+  "source_path": "/home/muuser/bushuk-labs/gym/gym equipment/gym equipment list.md",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "Список обладнання спортзалу",
+  "summary": "Інвентаризує кардіообладнання, силові тренажери, вільні ваги та функціональні аксесуари спортзалу, зіставляючи кількість і характеристики з 32 фотографіями.",
+  "scope": [
+    "кардіообладнання",
+    "силові тренажери",
+    "вільні ваги",
+    "функціональні аксесуари",
+    "фотографії обладнання"
+  ],
+  "cross_refs": [
+    "./photos%20gym%20equipment/"
+  ],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

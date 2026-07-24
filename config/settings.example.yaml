@@ -1,0 +1,44 @@
+config_version: "1.0.0"
+
+source:
+  spreadsheet_id_env: WORKOUT_SHEET_ID
+  expected_tabs:
+    - Програма
+    - Сесії
+    - Підходи
+    - Рекомендації
+  authorization:
+    mode: isolated_service_account
+    scopes:
+      - https://www.googleapis.com/auth/spreadsheets.readonly
+      - https://www.googleapis.com/auth/drive.metadata.readonly
+    drive_metadata_use: exact_configured_file_version_fence_only
+    desktop_oauth_fallback:
+      scopes:
+        - https://www.googleapis.com/auth/spreadsheets.readonly
+      coherence_fence: double_full_capture_fingerprint
+  allow_writeback: false
+
+storage:
+  raw_root: data/raw
+  processed_root: data/processed
+  quarantine_root: data/quarantine
+  sqlite_path: data/workout-tracker.sqlite
+  reports_root: reports
+  backups_root: data/backups
+
+sync:
+  maximum_capture_retries: 3
+  reject_on_any_authoritative_entity_error: true
+  deletion_guard_fraction: 0.10
+
+report:
+  timezone_source: spreadsheet
+  default_period_days: 56
+  formula_ruleset: metrics-v1
+
+backup:
+  maximum_rpo_hours: 24
+  daily_retention: 35
+  monthly_retention: 12
+  maximum_restore_verification_age_days: 7

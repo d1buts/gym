@@ -1,0 +1,1567 @@
+---
+contract:
+  id: "workout-tracker-source-contract"
+  schema_version: "1.0.0"
+  status: "normative"
+  effective_date: "2026-07-24"
+  documentation_locale: "uk-UA"
+  spreadsheet_locale:
+    source: "spreadsheet_properties.locale"
+    required: true
+  spreadsheet_time_zone:
+    source: "spreadsheet_properties.timeZone"
+    required: true
+  encoding: "UTF-8"
+  documentation: "docs/architecture/DATA_MODEL.md"
+
+versions:
+  schema:
+    current: "1.0.0"
+    accepted:
+      - "1.0.0"
+    pattern: "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+  program:
+    pattern: "^program-v[0-9]+\\.[0-9]+\\.[0-9]+$"
+    value_is_supplied_by: "google_sheets_program_owner"
+  normalizer:
+    current: "normalizer-v1"
+    pattern: "^normalizer-v[0-9]+$"
+  formulas:
+    current: "metrics-v1"
+    pattern: "^metrics-v[0-9]+$"
+
+authority:
+  schema:
+    owner: "git"
+    path: "config/schema.yaml"
+  program_prescriptions:
+    owner: "google_sheets"
+    tab: "Програма"
+    version_key: "program_version_id"
+    human_bootstrap_sources:
+      - "4-day upper lower program/README.md"
+      - "4-day upper lower program/01 upper strength.md"
+      - "4-day upper lower program/02 lower strength.md"
+      - "4-day upper lower program/03 upper hypertrophy.md"
+      - "4-day upper lower program/04 lower hypertrophy.md"
+      - "4-day upper lower program/05 progression and session rules.md"
+    git_mirror_if_created: "config/program.yaml"
+    git_mirror_authoritative: false
+  training_facts:
+    owner: "google_sheets"
+    tabs:
+      - "Сесії"
+      - "Підходи"
+  recommendation_journal:
+    owner: "google_sheets"
+    tab: "Рекомендації"
+  sheet_calculations:
+    owner: "google_sheets_formulas"
+    authoritative: false
+    use_as_analytical_evidence: false
+  local_derived_data:
+    owner: "local_pipeline"
+    authoritative_for_source_facts: false
+    requires:
+      - "snapshot_id"
+      - "source_payload_sha256"
+      - "schema_version"
+      - "normalizer_version"
+      - "formula_version_when_applicable"
+
+source:
+  system: "google_sheets"
+  spreadsheet_id:
+    storage: "runtime_configuration"
+    config_key: "WORKOUT_SHEET_ID"
+    value_in_contract: null
+  required_tabs:
+    - "Програма"
+    - "Сесії"
+    - "Підходи"
+    - "Рекомендації"
+  header_row: 1
+  blank_cell_policy: "null"
+  row_number_is_identity: false
+  source_version:
+    preferred: "connector_opaque_version_or_etag"
+    fallback: "snapshot_content_sha256"
+
+data_classes:
+  source_fact:
+    description: "Значення, яким володіє визначене джерело; raw snapshot зберігає його без змін."
+  sheet_calculated:
+    description: "Кеш від формули для показу; не є фактом і не є входом локальних метрик."
+  local_derived:
+    description: "Значення, обчислене локально з версійованою формулою та повним lineage."
+
+id_policy:
+  generation_owner: "source_writer"
+  immutable: true
+  row_position_forbidden: true
+  content_derived_fallback_forbidden: true
+  missing_id_action: "quarantine"
+  legacy_backfill:
+    mode: "explicit_source_migration"
+    persist_to_source_before_import: true
+    normalizer_must_not_backfill: true
+  formats:
+    program_item_id:
+      pattern: "^prg_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    program_version_id:
+      pattern: "^pver_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    session_id:
+      pattern: "^ses_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    set_id:
+      pattern: "^set_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    recommendation_id:
+      pattern: "^rec_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    snapshot_id:
+      pattern: "^snp_[0-9a-f]{64}$"
+
+revision_policy:
+  field: "source_revision"
+  first_revision: 1
+  increment_on_source_fact_change: true
+  entity_key: "stable_id"
+  immutable_local_version_key:
+    - "entity_id"
+    - "source_revision"
+    - "source_payload_sha256"
+  same_revision_different_payload: "fatal"
+  lower_revision_after_higher_revision: "error"
+  physical_delete_forbidden: true
+  deletion_representation: "entity_specific_void_or_inactive_status"
+  complete_snapshot_absence:
+    local_action: "create_tombstone_revision"
+    source_fact_inference: "none"
+    partial_snapshot_action: "never_tombstone"
+
+canonical_workout_types:
+  upper_strength:
+    source_label: "Верх — сила"
+    internal_alias: "upper_strength"
+  lower_strength:
+    source_label: "Низ — сила"
+    internal_alias: "lower_strength"
+  upper_hypertrophy:
+    source_label: "Верх — гіпертрофія"
+    internal_alias: "upper_hypertrophy"
+  lower_hypertrophy:
+    source_label: "Низ — гіпертрофія"
+    internal_alias: "lower_hypertrophy"
+  sheet_accepts_internal_alias: false
+
+enums:
+  program_version_status:
+    - "active"
+    - "retired"
+  program_item_status:
+    - "active"
+    - "inactive"
+  session_status:
+    - "writing"
+    - "complete"
+    - "void"
+  set_status:
+    - "completed"
+    - "partial"
+    - "skipped"
+    - "void"
+  set_role:
+    - "warmup"
+    - "working"
+    - "backoff"
+  measurement_kind:
+    - "repetitions"
+    - "duration"
+    - "repetitions_and_duration"
+  laterality:
+    - "bilateral"
+    - "alternating_total"
+    - "unilateral_both"
+    - "left_only"
+    - "right_only"
+  load_unit:
+    - "kg"
+    - "lb"
+    - "machine_level"
+  load_basis:
+    - "total_external"
+    - "per_implement"
+    - "machine_stack"
+    - "added_to_bodyweight"
+    - "assistance"
+    - "bodyweight_only"
+  generated_by:
+    - "human"
+    - "rules_engine"
+    - "llm"
+  recommendation_scope:
+    - "exercise_variant"
+    - "exercise_family"
+    - "workout_type"
+    - "program"
+    - "recovery"
+  recommendation_type:
+    - "deterministic_progression"
+    - "program_change"
+    - "volume_change"
+    - "exercise_substitution"
+    - "recovery_flag"
+    - "technique_review"
+  recommendation_status:
+    - "proposed"
+    - "accepted"
+    - "rejected"
+    - "expired"
+    - "superseded"
+    - "void"
+  recommendation_outcome:
+    - "successful"
+    - "mixed"
+    - "unsuccessful"
+    - "not_evaluated"
+
+common_types:
+  schema_version:
+    type: "string"
+    pattern: "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+  program_version:
+    type: "string"
+    pattern: "^program-v[0-9]+\\.[0-9]+\\.[0-9]+$"
+  source_revision:
+    type: "integer"
+    minimum: 1
+  date:
+    type: "date"
+    format: "YYYY-MM-DD"
+  datetime:
+    type: "datetime"
+    format: "RFC3339_with_utc_offset"
+  short_text:
+    type: "string"
+    max_length: 500
+  long_text:
+    type: "string"
+    max_length: 5000
+  canonical_slug:
+    type: "string"
+    pattern: "^[a-z][a-z0-9_]{1,63}$"
+  comparison_cohort_id:
+    type: "string"
+    pattern: "^coh_[0-9a-f]{64}$"
+  sha256:
+    type: "string"
+    pattern: "^[0-9a-f]{64}$"
+
+sheet_tabs:
+  program:
+    title: "Програма"
+    authority_role: "operational_program_prescriptions"
+    entity: "program_item"
+    primary_key: "program_item_id"
+    group_entity:
+      name: "program_version"
+      key: "program_version_id"
+      invariant_fields:
+        - "schema_version"
+        - "program_version"
+        - "program_version_status"
+        - "published_at"
+    columns:
+      - field: "program_item_id"
+        header: "ID елемента програми"
+        type: "string"
+        pattern_ref: "id_policy.formats.program_item_id.pattern"
+        nullable: false
+        data_class: "source_fact"
+      - field: "schema_version"
+        header: "Версія схеми"
+        type_ref: "common_types.schema_version"
+        nullable: false
+        data_class: "source_fact"
+      - field: "program_version_id"
+        header: "ID версії програми"
+        type: "string"
+        pattern_ref: "id_policy.formats.program_version_id.pattern"
+        nullable: false
+        data_class: "source_fact"
+      - field: "program_version"
+        header: "Версія програми"
+        type_ref: "common_types.program_version"
+        nullable: false
+        data_class: "source_fact"
+      - field: "program_version_status"
+        header: "Статус версії програми"
+        type: "string"
+        enum_ref: "enums.program_version_status"
+        nullable: false
+        data_class: "source_fact"
+      - field: "source_revision"
+        header: "Ревізія джерела"
+        type_ref: "common_types.source_revision"
+        nullable: false
+        data_class: "source_fact"
+      - field: "published_at"
+        header: "Опубліковано о"
+        type_ref: "common_types.datetime"
+        nullable: false
+        data_class: "source_fact"
+      - field: "status"
+        header: "Статус елемента"
+        type: "string"
+        enum_ref: "enums.program_item_status"
+        nullable: false
+        data_class: "source_fact"
+      - field: "workout_type"
+        header: "Тип тренування"
+        type: "string"
+        enum_source_ref: "canonical_workout_types.*.source_label"
+        nullable: false
+        data_class: "source_fact"
+      - field: "block_code"
+        header: "Код блоку"
+        type: "string"
+        pattern: "^[A-Z][0-9]?$"
+        nullable: false
+        data_class: "source_fact"
+      - field: "exercise_order"
+        header: "Порядок вправи"
+        type: "integer"
+        minimum: 1
+        maximum: 100
+        nullable: false
+        data_class: "source_fact"
+      - field: "exercise_family_id"
+        header: "ID сімейства вправи"
+        type_ref: "common_types.canonical_slug"
+        nullable: false
+        data_class: "source_fact"
+      - field: "exercise_variant_id"
+        header: "ID варіанта вправи"
+        type_ref: "common_types.canonical_slug"
+        nullable: false
+        data_class: "source_fact"
+      - field: "comparison_cohort_id"
+        header: "ID когорти порівняння"
+        type_ref: "common_types.comparison_cohort_id"
+        nullable: false
+        data_class: "source_fact"
+      - field: "equipment_id"
+        header: "ID обладнання"
+        type_ref: "common_types.canonical_slug"
+        nullable: false
+        data_class: "source_fact"
+      - field: "setup_id"
+        header: "ID налаштування"
+        type_ref: "common_types.canonical_slug"
+        nullable: false
+        data_class: "source_fact"
+      - field: "exercise_name"
+        header: "Назва вправи"
+        type: "string"
+        min_length: 1
+        max_length: 200
+        nullable: false
+        data_class: "source_fact"
+      - field: "primary_muscle_group_id"
+        header: "ID основної групи м'язів"
+        type_ref: "common_types.canonical_slug"
+        nullable: false
+        data_class: "source_fact"
+      - field: "set_role"
+        header: "Роль підходу"
+        type: "string"
+        enum_ref: "enums.set_role"
+        nullable: false
+        data_class: "source_fact"
+      - field: "target_sets"
+        header: "Цільові підходи"
+        type: "integer"
+        minimum: 1
+        maximum: 20
+        nullable: false
+        data_class: "source_fact"
+      - field: "prescribed_optional"
+        header: "Опціональний блок"
+        type: "boolean"
+        nullable: false
+        data_class: "source_fact"
+      - field: "measurement_kind"
+        header: "Тип вимірювання"
+        type: "string"
+        enum_ref: "enums.measurement_kind"
+        nullable: false
+        data_class: "source_fact"
+      - field: "laterality"
+        header: "Сторонність"
+        type: "string"
+        enum_ref: "enums.laterality"
+        nullable: false
+        data_class: "source_fact"
+      - field: "target_reps_min"
+        header: "Мінімум повторів"
+        type: "integer"
+        minimum: 1
+        maximum: 1000
+        nullable: true
+        data_class: "source_fact"
+      - field: "target_reps_max"
+        header: "Максимум повторів"
+        type: "integer"
+        minimum: 1
+        maximum: 1000
+        nullable: true
+        data_class: "source_fact"
+      - field: "target_duration_seconds_min"
+        header: "Мінімум тривалості, с"
+        type: "decimal"
+        exclusive_minimum: 0
+        maximum: 86400
+        nullable: true
+        data_class: "source_fact"
+      - field: "target_duration_seconds_max"
+        header: "Максимум тривалості, с"
+        type: "decimal"
+        exclusive_minimum: 0
+        maximum: 86400
+        nullable: true
+        data_class: "source_fact"
+      - field: "target_rir_min"
+        header: "Мінімальний RIR"
+        type: "decimal"
+        minimum: 0
+        maximum: 10
+        nullable: false
+        data_class: "source_fact"
+      - field: "target_rir_max"
+        header: "Максимальний RIR"
+        type: "decimal"
+        minimum: 0
+        maximum: 10
+        nullable: false
+        data_class: "source_fact"
+      - field: "rest_seconds_min"
+        header: "Мінімальний відпочинок, с"
+        type: "integer"
+        minimum: 0
+        maximum: 3600
+        nullable: false
+        data_class: "source_fact"
+      - field: "rest_seconds_max"
+        header: "Максимальний відпочинок, с"
+        type: "integer"
+        minimum: 0
+        maximum: 3600
+        nullable: false
+        data_class: "source_fact"
+      - field: "load_increment_value"
+        header: "Крок навантаження"
+        type: "decimal"
+        exclusive_minimum: 0
+        maximum: 1000
+        nullable: true
+        data_class: "source_fact"
+      - field: "load_increment_unit"
+        header: "Одиниця кроку"
+        type: "string"
+        enum_ref: "enums.load_unit"
+        nullable: true
+        data_class: "source_fact"
+      - field: "load_increment_basis"
+        header: "База кроку"
+        type: "string"
+        enum_ref: "enums.load_basis"
+        nullable: true
+        data_class: "source_fact"
+      - field: "expected_implement_count"
+        header: "Очікувана кількість снарядів"
+        type: "integer"
+        minimum: 1
+        maximum: 8
+        nullable: true
+        data_class: "source_fact"
+      - field: "priority"
+        header: "Пріоритет"
+        type: "integer"
+        minimum: 1
+        maximum: 5
+        nullable: false
+        data_class: "source_fact"
+      - field: "technical_notes"
+        header: "Технічні нотатки"
+        type_ref: "common_types.long_text"
+        nullable: true
+        data_class: "source_fact"
+      - field: "definition_sha256"
+        header: "SHA-256 визначення"
+        type_ref: "common_types.sha256"
+        nullable: false
+        data_class: "source_fact"
+
+  sessions:
+    title: "Сесії"
+    authority_role: "training_facts"
+    entity: "session"
+    primary_key: "session_id"
+    columns:
+      - field: "session_id"
+        header: "ID сесії"
+        type: "string"
+        pattern_ref: "id_policy.formats.session_id.pattern"
+        nullable: false
+        data_class: "source_fact"
+      - field: "schema_version"
+        header: "Версія схеми"
+        type_ref: "common_types.schema_version"
+        nullable: false
+        data_class: "source_fact"
+      - field: "source_revision"
+        header: "Ревізія джерела"
+        type_ref: "common_types.source_revision"
+        nullable: false
+        data_class: "source_fact"
+      - field: "created_at"
+        header: "Створено о"
+        type_ref: "common_types.datetime"
+        nullable: false
+        data_class: "source_fact"
+      - field: "updated_at"
+        header: "Оновлено о"
+        type_ref: "common_types.datetime"
+        nullable: false
+        data_class: "source_fact"
+      - field: "status"
+        header: "Статус запису"
+        type: "string"
+        enum_ref: "enums.session_status"
+        nullable: false
+        data_class: "source_fact"
+      - field: "program_version_id"
+        header: "ID версії програми"
+        type: "string"
+        pattern_ref: "id_policy.formats.program_version_id.pattern"
+        nullable: false
+        data_class: "source_fact"
+      - field: "session_date"
+        header: "Дата"
+        type_ref: "common_types.date"
+        nullable: false
+        data_class: "source_fact"
+      - field: "workout_type"
+        header: "Тип тренування"
+        type: "string"
+        enum_source_ref: "canonical_workout_types.*.source_label"
+        nullable: false
+        data_class: "source_fact"
+      - field: "started_at"
+        header: "Початок о"
+        type_ref: "common_types.datetime"
+        nullable: true
+        data_class: "source_fact"
+      - field: "completed_at"
+        header: "Завершено о"
+        type_ref: "common_types.datetime"
+        nullable: true
+        data_class: "source_fact"
+      - field: "duration_minutes"
+        header: "Тривалість, хв"
+        type: "decimal"
+        exclusive_minimum: 0
+        maximum: 360
+        nullable: true
+        data_class: "source_fact"
+      - field: "expected_set_count"
+        header: "Очікувана кількість підходів"
+        type: "integer"
+        minimum: 0
+        maximum: 500
+        nullable: false
+        data_class: "source_fact"
+      - field: "body_mass_value"
+        header: "Маса тіла"
+        type: "decimal"
+        exclusive_minimum: 0
+        maximum: 1000
+        nullable: true
+        data_class: "source_fact"
+      - field: "body_mass_unit"
+        header: "Одиниця маси тіла"
+        type: "string"
+        allowed:
+          - "kg"
+          - "lb"
+        nullable: true
+        data_class: "source_fact"
+      - field: "sleep_hours"
+        header: "Сон, год"
+        type: "decimal"
+        minimum: 0
+        maximum: 24
+        nullable: true
+        data_class: "source_fact"
+      - field: "energy_score"
+        header: "Енергія, 1–5"
+        type: "integer"
+        minimum: 1
+        maximum: 5
+        nullable: true
+        data_class: "source_fact"
+      - field: "stress_score"
+        header: "Стрес, 1–5"
+        type: "integer"
+        minimum: 1
+        maximum: 5
+        nullable: true
+        data_class: "source_fact"
+      - field: "soreness_score"
+        header: "Крепатура, 1–5"
+        type: "integer"
+        minimum: 1
+        maximum: 5
+        nullable: true
+        data_class: "source_fact"
+      - field: "performance_score"
+        header: "Результативність, 1–5"
+        type: "integer"
+        minimum: 1
+        maximum: 5
+        nullable: true
+        data_class: "source_fact"
+      - field: "notes"
+        header: "Нотатки"
+        type_ref: "common_types.long_text"
+        nullable: true
+        data_class: "source_fact"
+      - field: "void_reason"
+        header: "Причина анулювання"
+        type_ref: "common_types.short_text"
+        nullable: true
+        data_class: "source_fact"
+      - field: "observed_set_count_sheet"
+        header: "Факт підходів (формула)"
+        type: "integer"
+        minimum: 0
+        maximum: 500
+        nullable: true
+        data_class: "sheet_calculated"
+      - field: "working_set_count_sheet"
+        header: "Робочі підходи (формула)"
+        type: "integer"
+        minimum: 0
+        maximum: 500
+        nullable: true
+        data_class: "sheet_calculated"
+      - field: "volume_sheet"
+        header: "Обсяг (формула)"
+        type: "decimal"
+        minimum: 0
+        nullable: true
+        data_class: "sheet_calculated"
+      - field: "average_rir_sheet"
+        header: "Середній RIR (формула)"
+        type: "decimal"
+        minimum: 0
+        maximum: 10
+        nullable: true
+        data_class: "sheet_calculated"
+      - field: "average_rest_seconds_sheet"
+        header: "Середній відпочинок, с (формула)"
+        type: "decimal"
+        minimum: 0
+        maximum: 3600
+        nullable: true
+        data_class: "sheet_calculated"
+      - field: "risk_flags_sheet"
+        header: "Прапорці ризику (формула)"
+        type: "json_array"
+        nullable: true
+        data_class: "sheet_calculated"
+      - field: "sheet_formula_version"
+        header: "Версія формул таблиці"
+        type: "string"
+        pattern_ref: "versions.formulas.pattern"
+        nullable: true
+        data_class: "sheet_calculated"
+
+  sets:
+    title: "Підходи"
+    authority_role: "training_facts"
+    entity: "set"
+    primary_key: "set_id"
+    columns:
+      - field: "set_id"
+        header: "ID підходу"
+        type: "string"
+        pattern_ref: "id_policy.formats.set_id.pattern"
+        nullable: false
+        data_class: "source_fact"
+      - field: "session_id"
+        header: "ID сесії"
+        type: "string"
+        pattern_ref: "id_policy.formats.session_id.pattern"
+        nullable: false
+        data_class: "source_fact"
+      - field: "program_item_id"
+        header: "ID елемента програми"
+        type: "string"
+        pattern_ref: "id_policy.formats.program_item_id.pattern"
+        nullable: true
+        data_class: "source_fact"
+      - field: "schema_version"
+        header: "Версія схеми"
+        type_ref: "common_types.schema_version"
+        nullable: false
+        data_class: "source_fact"
+      - field: "program_version_id"
+        header: "ID версії програми"
+        type: "string"
+        pattern_ref: "id_policy.formats.program_version_id.pattern"
+        nullable: false
+        data_class: "source_fact"
+      - field: "source_revision"
+        header: "Ревізія джерела"
+        type_ref: "common_types.source_revision"
+        nullable: false
+        data_class: "source_fact"
+      - field: "created_at"
+        header: "Створено о"
+        type_ref: "common_types.datetime"
+        nullable: false
+        data_class: "source_fact"
+      - field: "updated_at"
+        header: "Оновлено о"
+        type_ref: "common_types.datetime"
+        nullable: false
+        data_class: "source_fact"
+      - field: "status"
+        header: "Статус підходу"
+        type: "string"
+        enum_ref: "enums.set_status"
+        nullable: false
+        data_class: "source_fact"
+      - field: "set_number"
+        header: "Номер підходу"
+        type: "integer"
+        minimum: 1
+        maximum: 100
+        nullable: false
+        data_class: "source_fact"
+      - field: "performed_order"
+        header: "Порядок виконання"
+        type: "integer"
+        minimum: 1
+        maximum: 500
+        nullable: false
+        data_class: "source_fact"
+      - field: "set_role"
+        header: "Роль підходу"
+        type: "string"
+        enum_ref: "enums.set_role"
+        nullable: false
+        data_class: "source_fact"
+      - field: "prescribed_optional"
+        header: "Опціональний за програмою"
+        type: "boolean"
+        nullable: false
+        data_class: "source_fact"
+      - field: "unplanned_reason"
+        header: "Причина позапланового підходу"
+        type_ref: "common_types.short_text"
+        nullable: true
+        data_class: "source_fact"
+      - field: "exercise_family_id"
+        header: "ID сімейства вправи"
+        type_ref: "common_types.canonical_slug"
+        nullable: false
+        data_class: "source_fact"
+      - field: "exercise_variant_id"
+        header: "ID варіанта вправи"
+        type_ref: "common_types.canonical_slug"
+        nullable: false
+        data_class: "source_fact"
+      - field: "comparison_cohort_id"
+        header: "ID когорти порівняння"
+        type_ref: "common_types.comparison_cohort_id"
+        nullable: false
+        data_class: "source_fact"
+      - field: "equipment_id"
+        header: "ID обладнання"
+        type_ref: "common_types.canonical_slug"
+        nullable: false
+        data_class: "source_fact"
+      - field: "setup_id"
+        header: "ID налаштування"
+        type_ref: "common_types.canonical_slug"
+        nullable: false
+        data_class: "source_fact"
+      - field: "exercise_name"
+        header: "Назва вправи"
+        type: "string"
+        min_length: 1
+        max_length: 200
+        nullable: false
+        data_class: "source_fact"
+      - field: "primary_muscle_group_id"
+        header: "ID основної групи м'язів"
+        type_ref: "common_types.canonical_slug"
+        nullable: false
+        data_class: "source_fact"
+      - field: "measurement_kind"
+        header: "Тип вимірювання"
+        type: "string"
+        enum_ref: "enums.measurement_kind"
+        nullable: false
+        data_class: "source_fact"
+      - field: "laterality"
+        header: "Сторонність"
+        type: "string"
+        enum_ref: "enums.laterality"
+        nullable: false
+        data_class: "source_fact"
+      - field: "load_value"
+        header: "Навантаження"
+        type: "decimal"
+        minimum: 0
+        maximum: 5000
+        nullable: true
+        data_class: "source_fact"
+      - field: "load_unit"
+        header: "Одиниця навантаження"
+        type: "string"
+        enum_ref: "enums.load_unit"
+        nullable: true
+        data_class: "source_fact"
+      - field: "load_basis"
+        header: "База навантаження"
+        type: "string"
+        enum_ref: "enums.load_basis"
+        nullable: false
+        data_class: "source_fact"
+      - field: "implement_count"
+        header: "Кількість снарядів"
+        type: "integer"
+        minimum: 1
+        maximum: 8
+        nullable: true
+        data_class: "source_fact"
+      - field: "reps_total"
+        header: "Повтори всього"
+        type: "integer"
+        minimum: 1
+        maximum: 1000
+        nullable: true
+        data_class: "source_fact"
+      - field: "reps_left"
+        header: "Повтори ліворуч"
+        type: "integer"
+        minimum: 1
+        maximum: 1000
+        nullable: true
+        data_class: "source_fact"
+      - field: "reps_right"
+        header: "Повтори праворуч"
+        type: "integer"
+        minimum: 1
+        maximum: 1000
+        nullable: true
+        data_class: "source_fact"
+      - field: "duration_seconds_total"
+        header: "Тривалість всього, с"
+        type: "decimal"
+        exclusive_minimum: 0
+        maximum: 86400
+        nullable: true
+        data_class: "source_fact"
+      - field: "duration_seconds_left"
+        header: "Тривалість ліворуч, с"
+        type: "decimal"
+        exclusive_minimum: 0
+        maximum: 86400
+        nullable: true
+        data_class: "source_fact"
+      - field: "duration_seconds_right"
+        header: "Тривалість праворуч, с"
+        type: "decimal"
+        exclusive_minimum: 0
+        maximum: 86400
+        nullable: true
+        data_class: "source_fact"
+      - field: "rir"
+        header: "RIR"
+        type: "decimal"
+        minimum: 0
+        maximum: 10
+        nullable: true
+        data_class: "source_fact"
+      - field: "rest_seconds"
+        header: "Відпочинок, с"
+        type: "integer"
+        minimum: 0
+        maximum: 3600
+        nullable: true
+        data_class: "source_fact"
+      - field: "pain_score"
+        header: "Біль, 0–10"
+        type: "integer"
+        minimum: 0
+        maximum: 10
+        nullable: true
+        data_class: "source_fact"
+      - field: "pain_location"
+        header: "Локалізація болю"
+        type_ref: "common_types.short_text"
+        nullable: true
+        data_class: "source_fact"
+      - field: "technique_score"
+        header: "Техніка, 1–5"
+        type: "integer"
+        minimum: 1
+        maximum: 5
+        nullable: true
+        data_class: "source_fact"
+      - field: "skip_reason"
+        header: "Причина пропуску"
+        type_ref: "common_types.short_text"
+        nullable: true
+        data_class: "source_fact"
+      - field: "void_reason"
+        header: "Причина анулювання"
+        type_ref: "common_types.short_text"
+        nullable: true
+        data_class: "source_fact"
+      - field: "notes"
+        header: "Нотатки"
+        type_ref: "common_types.long_text"
+        nullable: true
+        data_class: "source_fact"
+      - field: "session_date_sheet"
+        header: "Дата сесії (формула)"
+        type_ref: "common_types.date"
+        nullable: true
+        data_class: "sheet_calculated"
+      - field: "workout_type_sheet"
+        header: "Тип тренування (формула)"
+        type: "string"
+        enum_source_ref: "canonical_workout_types.*.source_label"
+        nullable: true
+        data_class: "sheet_calculated"
+      - field: "volume_sheet"
+        header: "Обсяг (формула)"
+        type: "decimal"
+        minimum: 0
+        nullable: true
+        data_class: "sheet_calculated"
+      - field: "volume_unit_sheet"
+        header: "Одиниця обсягу (формула)"
+        type: "string"
+        allowed:
+          - "kg_reps"
+          - "lb_reps"
+        nullable: true
+        data_class: "sheet_calculated"
+      - field: "e1rm_sheet"
+        header: "e1RM (формула)"
+        type: "decimal"
+        minimum: 0
+        nullable: true
+        data_class: "sheet_calculated"
+      - field: "e1rm_unit_sheet"
+        header: "Одиниця e1RM (формула)"
+        type: "string"
+        allowed:
+          - "kg"
+          - "lb"
+        nullable: true
+        data_class: "sheet_calculated"
+      - field: "sheet_formula_version"
+        header: "Версія формул таблиці"
+        type: "string"
+        pattern_ref: "versions.formulas.pattern"
+        nullable: true
+        data_class: "sheet_calculated"
+
+  recommendations:
+    title: "Рекомендації"
+    authority_role: "recommendation_journal"
+    entity: "recommendation"
+    primary_key: "recommendation_id"
+    columns:
+      - field: "recommendation_id"
+        header: "ID рекомендації"
+        type: "string"
+        pattern_ref: "id_policy.formats.recommendation_id.pattern"
+        nullable: false
+        data_class: "source_fact"
+      - field: "schema_version"
+        header: "Версія схеми"
+        type_ref: "common_types.schema_version"
+        nullable: false
+        data_class: "source_fact"
+      - field: "program_version_id"
+        header: "ID версії програми"
+        type: "string"
+        pattern_ref: "id_policy.formats.program_version_id.pattern"
+        nullable: false
+        data_class: "source_fact"
+      - field: "source_revision"
+        header: "Ревізія джерела"
+        type_ref: "common_types.source_revision"
+        nullable: false
+        data_class: "source_fact"
+      - field: "created_at"
+        header: "Створено о"
+        type_ref: "common_types.datetime"
+        nullable: false
+        data_class: "source_fact"
+      - field: "updated_at"
+        header: "Оновлено о"
+        type_ref: "common_types.datetime"
+        nullable: false
+        data_class: "source_fact"
+      - field: "analysis_date"
+        header: "Дата аналізу"
+        type_ref: "common_types.date"
+        nullable: false
+        data_class: "source_fact"
+      - field: "scope"
+        header: "Сфера аналізу"
+        type: "string"
+        enum_ref: "enums.recommendation_scope"
+        nullable: false
+        data_class: "source_fact"
+      - field: "workout_type"
+        header: "Тип тренування"
+        type: "string"
+        enum_source_ref: "canonical_workout_types.*.source_label"
+        nullable: true
+        data_class: "source_fact"
+      - field: "exercise_family_id"
+        header: "ID сімейства вправи"
+        type_ref: "common_types.canonical_slug"
+        nullable: true
+        data_class: "source_fact"
+      - field: "exercise_variant_id"
+        header: "ID варіанта вправи"
+        type_ref: "common_types.canonical_slug"
+        nullable: true
+        data_class: "source_fact"
+      - field: "comparison_cohort_id"
+        header: "ID когорти порівняння"
+        type_ref: "common_types.comparison_cohort_id"
+        nullable: true
+        data_class: "source_fact"
+      - field: "recommendation_type"
+        header: "Тип рекомендації"
+        type: "string"
+        enum_ref: "enums.recommendation_type"
+        nullable: false
+        data_class: "source_fact"
+      - field: "signal_code"
+        header: "Код сигналу"
+        type_ref: "common_types.canonical_slug"
+        nullable: false
+        data_class: "source_fact"
+      - field: "signal_summary"
+        header: "Виявлений сигнал"
+        type_ref: "common_types.long_text"
+        nullable: false
+        data_class: "source_fact"
+      - field: "evidence_summary"
+        header: "Опис доказів"
+        type_ref: "common_types.long_text"
+        nullable: false
+        data_class: "source_fact"
+      - field: "evidence_refs_json"
+        header: "Посилання на докази, JSON"
+        type: "json_array"
+        schema_ref: "local_models.evidence_reference"
+        nullable: false
+        data_class: "source_fact"
+      - field: "evidence_sha256"
+        header: "SHA-256 доказів"
+        type_ref: "common_types.sha256"
+        nullable: false
+        data_class: "source_fact"
+      - field: "recommendation_text"
+        header: "Рекомендація"
+        type_ref: "common_types.long_text"
+        nullable: false
+        data_class: "source_fact"
+      - field: "confidence"
+        header: "Впевненість, 0–1"
+        type: "decimal"
+        minimum: 0
+        maximum: 1
+        nullable: false
+        data_class: "source_fact"
+      - field: "generated_by"
+        header: "Автор"
+        type: "string"
+        enum_ref: "enums.generated_by"
+        nullable: false
+        data_class: "source_fact"
+      - field: "generator_id"
+        header: "ID генератора"
+        type: "string"
+        min_length: 1
+        max_length: 200
+        nullable: false
+        data_class: "source_fact"
+      - field: "generator_version"
+        header: "Версія генератора"
+        type: "string"
+        min_length: 1
+        max_length: 100
+        nullable: false
+        data_class: "source_fact"
+      - field: "rule_id"
+        header: "ID правила"
+        type_ref: "common_types.canonical_slug"
+        nullable: true
+        data_class: "source_fact"
+      - field: "rule_version"
+        header: "Версія правила"
+        type: "string"
+        min_length: 1
+        max_length: 100
+        nullable: true
+        data_class: "source_fact"
+      - field: "snapshot_id"
+        header: "ID snapshot"
+        type: "string"
+        pattern_ref: "id_policy.formats.snapshot_id.pattern"
+        nullable: true
+        data_class: "source_fact"
+      - field: "normalizer_version"
+        header: "Версія нормалізатора"
+        type: "string"
+        pattern_ref: "versions.normalizer.pattern"
+        nullable: true
+        data_class: "source_fact"
+      - field: "formula_version"
+        header: "Версія формул"
+        type: "string"
+        pattern_ref: "versions.formulas.pattern"
+        nullable: true
+        data_class: "source_fact"
+      - field: "status"
+        header: "Статус рекомендації"
+        type: "string"
+        enum_ref: "enums.recommendation_status"
+        nullable: false
+        data_class: "source_fact"
+      - field: "decision_at"
+        header: "Рішення о"
+        type_ref: "common_types.datetime"
+        nullable: true
+        data_class: "source_fact"
+      - field: "decision_notes"
+        header: "Нотатки до рішення"
+        type_ref: "common_types.long_text"
+        nullable: true
+        data_class: "source_fact"
+      - field: "review_due_date"
+        header: "Перевірити до"
+        type_ref: "common_types.date"
+        nullable: false
+        data_class: "source_fact"
+      - field: "reviewed_at"
+        header: "Перевірено о"
+        type_ref: "common_types.datetime"
+        nullable: true
+        data_class: "source_fact"
+      - field: "outcome"
+        header: "Результат"
+        type: "string"
+        enum_ref: "enums.recommendation_outcome"
+        nullable: true
+        data_class: "source_fact"
+      - field: "outcome_notes"
+        header: "Нотатки про результат"
+        type_ref: "common_types.long_text"
+        nullable: true
+        data_class: "source_fact"
+      - field: "supersedes_recommendation_id"
+        header: "Замінює ID рекомендації"
+        type: "string"
+        pattern_ref: "id_policy.formats.recommendation_id.pattern"
+        nullable: true
+        data_class: "source_fact"
+      - field: "void_reason"
+        header: "Причина анулювання"
+        type_ref: "common_types.short_text"
+        nullable: true
+        data_class: "source_fact"
+
+local_models:
+  source_record_version:
+    data_class: "local_derived"
+    fields:
+      - "entity_type"
+      - "entity_id"
+      - "source_revision"
+      - "snapshot_id"
+      - "source_tab"
+      - "source_row_number"
+      - "source_payload_sha256"
+      - "schema_version"
+      - "observed_at"
+    identity_uses_source_row_number: false
+  set_component:
+    data_class: "local_derived"
+    primary_key:
+      - "set_id"
+      - "component_side"
+    component_side_values:
+      - "total"
+      - "left"
+      - "right"
+    fields:
+      - "set_id"
+      - "component_side"
+      - "reps"
+      - "duration_seconds"
+    logical_set_credit: 1
+  normalized_record:
+    data_class: "local_derived"
+    required_lineage:
+      - "snapshot_id"
+      - "source_payload_sha256"
+      - "schema_version"
+      - "normalizer_version"
+  metric_result:
+    data_class: "local_derived"
+    required_lineage:
+      - "snapshot_id"
+      - "schema_version"
+      - "normalizer_version"
+      - "formula_version"
+      - "formula_id"
+      - "parameters_json"
+      - "contributing_entity_ids"
+      - "excluded_entity_ids_with_reason"
+  evidence_reference:
+    type: "object"
+    required:
+      - "snapshot_id"
+      - "entity_type"
+      - "entity_id"
+    properties:
+      snapshot_id:
+        type: "string"
+        pattern_ref: "id_policy.formats.snapshot_id.pattern"
+      entity_type:
+        type: "string"
+        allowed:
+          - "session"
+          - "set"
+          - "program_item"
+          - "metric_result"
+      entity_id:
+        type: "string"
+        min_length: 1
+        max_length: 200
+
+conditional_rules:
+  - id: "PROGRAM_REPETITION_TARGET"
+    entity: "program_item"
+    when: "measurement_kind in ['repetitions', 'repetitions_and_duration']"
+    require:
+      - "target_reps_min"
+      - "target_reps_max"
+    assert: "target_reps_min <= target_reps_max"
+  - id: "PROGRAM_VERSION_METADATA_CONSISTENT"
+    entity: "program_version"
+    when: "always"
+    assert: "all Program rows for program_version_id have identical group_entity.invariant_fields"
+  - id: "PROGRAM_ONE_ACTIVE_VERSION"
+    entity: "program_version_collection"
+    when: "always"
+    assert: "exactly one distinct program_version_id has program_version_status == 'active'"
+  - id: "PROGRAM_VERSION_REFERENCEABLE"
+    entity: "session"
+    when: "always"
+    assert: "referenced program_version_status in ['active', 'retired']"
+  - id: "PROGRAM_DURATION_TARGET"
+    entity: "program_item"
+    when: "measurement_kind in ['duration', 'repetitions_and_duration']"
+    require:
+      - "target_duration_seconds_min"
+      - "target_duration_seconds_max"
+    assert: "target_duration_seconds_min <= target_duration_seconds_max"
+  - id: "PROGRAM_RIR_RANGE"
+    entity: "program_item"
+    when: "always"
+    assert: "target_rir_min <= target_rir_max"
+  - id: "PROGRAM_REST_RANGE"
+    entity: "program_item"
+    when: "always"
+    assert: "rest_seconds_min <= rest_seconds_max"
+  - id: "PROGRAM_LOAD_INCREMENT_TRIPLE"
+    entity: "program_item"
+    when: "any(load_increment_value, load_increment_unit, load_increment_basis) is present"
+    require:
+      - "load_increment_value"
+      - "load_increment_unit"
+      - "load_increment_basis"
+  - id: "SESSION_COMPLETE_REQUIREMENTS"
+    entity: "session"
+    when: "status == 'complete'"
+    require:
+      - "completed_at"
+    assert: "expected_set_count == count(non_void sets for session_id)"
+  - id: "SESSION_VOID_REASON"
+    entity: "session"
+    when: "status == 'void'"
+    require:
+      - "void_reason"
+  - id: "SESSION_BODY_MASS_PAIR"
+    entity: "session"
+    when: "any(body_mass_value, body_mass_unit) is present"
+    require:
+      - "body_mass_value"
+      - "body_mass_unit"
+  - id: "SET_PROGRAM_LINK"
+    entity: "set"
+    when: "set_role in ['working', 'backoff']"
+    assert: "exactly one of program_item_id or unplanned_reason is present"
+  - id: "SET_VERSION_MATCH"
+    entity: "set"
+    when: "always"
+    assert: "program_version_id == referenced session.program_version_id"
+  - id: "SET_PROGRAM_ITEM_VERSION_MATCH"
+    entity: "set"
+    when: "program_item_id is present"
+    assert: "program_item_id exists in Program for program_version_id"
+  - id: "SET_BODYWEIGHT_LOAD"
+    entity: "set"
+    when: "load_basis == 'bodyweight_only'"
+    assert: "load_value is null and load_unit is null and implement_count is null"
+  - id: "SET_EXTERNAL_LOAD"
+    entity: "set"
+    when: "load_basis != 'bodyweight_only' and status in ['completed', 'partial']"
+    require:
+      - "load_value"
+      - "load_unit"
+  - id: "SET_PER_IMPLEMENT_COUNT"
+    entity: "set"
+    when: "load_basis == 'per_implement'"
+    require:
+      - "implement_count"
+  - id: "SET_TOTAL_COMPONENT"
+    entity: "set"
+    when: "laterality in ['bilateral', 'alternating_total'] and status in ['completed', 'partial']"
+    forbid:
+      - "reps_left"
+      - "reps_right"
+      - "duration_seconds_left"
+      - "duration_seconds_right"
+  - id: "SET_UNILATERAL_BOTH_COMPONENTS"
+    entity: "set"
+    when: "laterality == 'unilateral_both' and status == 'completed'"
+    require_by_measurement:
+      repetitions:
+        - "reps_left"
+        - "reps_right"
+      duration:
+        - "duration_seconds_left"
+        - "duration_seconds_right"
+      repetitions_and_duration:
+        - "reps_left"
+        - "reps_right"
+        - "duration_seconds_left"
+        - "duration_seconds_right"
+    forbid:
+      - "reps_total"
+      - "duration_seconds_total"
+  - id: "SET_UNILATERAL_BOTH_PARTIAL"
+    entity: "set"
+    when: "laterality == 'unilateral_both' and status == 'partial'"
+    forbid:
+      - "reps_total"
+      - "duration_seconds_total"
+  - id: "SET_LEFT_ONLY_COMPONENT"
+    entity: "set"
+    when: "laterality == 'left_only' and status in ['completed', 'partial']"
+    forbid:
+      - "reps_total"
+      - "reps_right"
+      - "duration_seconds_total"
+      - "duration_seconds_right"
+  - id: "SET_RIGHT_ONLY_COMPONENT"
+    entity: "set"
+    when: "laterality == 'right_only' and status in ['completed', 'partial']"
+    forbid:
+      - "reps_total"
+      - "reps_left"
+      - "duration_seconds_total"
+      - "duration_seconds_left"
+  - id: "SET_REPETITION_MEASURE"
+    entity: "set"
+    when: "measurement_kind == 'repetitions' and status in ['completed', 'partial']"
+    assert: "at least one permitted reps component is present and every duration component is null"
+  - id: "SET_DURATION_MEASURE"
+    entity: "set"
+    when: "measurement_kind == 'duration' and status in ['completed', 'partial']"
+    assert: "at least one permitted duration component is present and every reps component is null"
+  - id: "SET_BOTH_MEASURES"
+    entity: "set"
+    when: "measurement_kind == 'repetitions_and_duration' and status in ['completed', 'partial']"
+    assert: "at least one permitted reps component and one permitted duration component are present"
+  - id: "SET_SKIPPED"
+    entity: "set"
+    when: "status == 'skipped'"
+    require:
+      - "skip_reason"
+    assert: "all performance components are null"
+  - id: "SET_VOID"
+    entity: "set"
+    when: "status == 'void'"
+    require:
+      - "void_reason"
+  - id: "SET_PAIN_DETAILS"
+    entity: "set"
+    when: "pain_score is present and pain_score > 0"
+    require:
+      - "pain_location"
+  - id: "RECOMMENDATION_SCOPE_EXERCISE"
+    entity: "recommendation"
+    when: "scope in ['exercise_variant', 'exercise_family']"
+    require:
+      - "exercise_family_id"
+  - id: "RECOMMENDATION_SCOPE_VARIANT"
+    entity: "recommendation"
+    when: "scope == 'exercise_variant'"
+    require:
+      - "exercise_variant_id"
+      - "comparison_cohort_id"
+  - id: "RECOMMENDATION_SCOPE_WORKOUT"
+    entity: "recommendation"
+    when: "scope == 'workout_type'"
+    require:
+      - "workout_type"
+  - id: "RECOMMENDATION_GENERATED_PROVENANCE"
+    entity: "recommendation"
+    when: "generated_by in ['rules_engine', 'llm']"
+    require:
+      - "snapshot_id"
+      - "normalizer_version"
+      - "formula_version"
+  - id: "RECOMMENDATION_RULE_PROVENANCE"
+    entity: "recommendation"
+    when: "generated_by == 'rules_engine'"
+    require:
+      - "rule_id"
+      - "rule_version"
+  - id: "RECOMMENDATION_DECISION"
+    entity: "recommendation"
+    when: "status in ['accepted', 'rejected']"
+    require:
+      - "decision_at"
+  - id: "RECOMMENDATION_REVIEW"
+    entity: "recommendation"
+    when: "outcome is present"
+    require:
+      - "reviewed_at"
+  - id: "RECOMMENDATION_VOID"
+    entity: "recommendation"
+    when: "status == 'void'"
+    require:
+      - "void_reason"
+
+validation:
+  severity_order:
+    - "fatal"
+    - "error"
+    - "warning"
+    - "info"
+  severities:
+    fatal:
+      accepted_into_mirror: false
+      advances_mirror_head: false
+      scope: "entire_snapshot"
+    error:
+      accepted_into_mirror: false
+      advances_mirror_head: false
+      scope: "row_or_entity_group"
+    warning:
+      accepted_into_mirror: true
+      scope: "row"
+    info:
+      accepted_into_mirror: true
+      scope: "row_or_run"
+  rules:
+    - code: "TAB_MISSING"
+      severity: "fatal"
+      applies_to: "workbook"
+      condition: "required tab is absent"
+    - code: "REQUIRED_HEADER_MISSING"
+      severity: "fatal"
+      applies_to: "tab"
+      condition: "any declared contract header is absent"
+    - code: "UNKNOWN_HEADER"
+      severity: "fatal"
+      applies_to: "tab"
+      condition: "a header is not declared by this schema version or an explicit versioned extension policy"
+    - code: "SCHEMA_VERSION_UNSUPPORTED"
+      severity: "fatal"
+      applies_to: "row"
+      condition: "schema_version is not in versions.schema.accepted"
+    - code: "STABLE_ID_MISSING_OR_INVALID"
+      severity: "error"
+      applies_to: "row"
+      condition: "source-owned primary ID is empty or violates its pattern"
+    - code: "DUPLICATE_ID_CONFLICT"
+      severity: "fatal"
+      applies_to: "snapshot"
+      condition: "same entity ID and source_revision have different payloads"
+    - code: "DUPLICATE_ID_REDUNDANT"
+      severity: "error"
+      applies_to: "entity"
+      condition: "same entity ID and source_revision appear more than once with byte-identical payloads"
+    - code: "REVISION_REGRESSION"
+      severity: "error"
+      applies_to: "entity"
+      condition: "source_revision is lower than the committed revision"
+    - code: "WORKOUT_TYPE_INVALID"
+      severity: "error"
+      applies_to: "row"
+      condition: "source label is not one of the four exact Ukrainian labels"
+    - code: "PROGRAM_VERSION_UNKNOWN"
+      severity: "error"
+      applies_to: "session_or_set"
+      condition: "program_version_id has no matching operational Program version"
+    - code: "FOREIGN_KEY_MISSING"
+      severity: "error"
+      applies_to: "entity_group"
+      condition: "set session_id or another required reference is unresolved"
+    - code: "SESSION_NOT_COMPLETE"
+      severity: "info"
+      applies_to: "session"
+      condition: "session status is writing; preserve in raw data and exclude from analytics"
+    - code: "SESSION_SET_COUNT_MISMATCH"
+      severity: "error"
+      applies_to: "session_group"
+      condition: "complete session expected_set_count differs from non-void set count"
+    - code: "CONDITIONAL_FIELD_INVALID"
+      severity: "error"
+      applies_to: "row"
+      condition: "a conditional_rules assertion fails"
+    - code: "VALUE_OUT_OF_RANGE"
+      severity: "error"
+      applies_to: "field"
+      condition: "typed value violates its declared minimum, maximum, or length"
+    - code: "SHEET_FORMULA_VALUE_INVALID"
+      severity: "warning"
+      applies_to: "sheet_calculated_field"
+      condition: "formula cache is absent, stale, or differs from local calculation"
+    - code: "OPTIONAL_VALUE_MISSING"
+      severity: "info"
+      applies_to: "nullable_source_fact"
+      condition: "nullable contextual value is empty"
+    - code: "ROW_POSITION_USED_AS_IDENTITY"
+      severity: "fatal"
+      applies_to: "pipeline_configuration"
+      condition: "an importer attempts to key an entity by sheet row number"

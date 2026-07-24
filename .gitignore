@@ -1,0 +1,51 @@
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+config/settings.yaml
+credentials*.json
+client_secret*.json
+token*.json
+*.pem
+*.key
+
+# Personal and generated workout data
+data/raw/
+data/processed/
+data/backups/
+data/quarantine/
+data/restore/
+restore-staging/
+data/*.sqlite
+data/*.sqlite-*
+*.db
+*.sqlite
+*.sqlite-*
+backups/
+exports/
+logs/
+reports/*
+!reports/README.md
+*.gsheet
+
+# Local GSD audit attempts may contain verbatim source snapshots
+.planning/attempts/
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+build/
+dist/
+*.egg-info/
+
+# Editors and operating systems
+.DS_Store
+.idea/
+.vscode/
+*.swp

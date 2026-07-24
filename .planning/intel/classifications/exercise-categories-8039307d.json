@@ -1,0 +1,23 @@
+{
+  "source_path": "/home/muuser/bushuk-labs/gym/gym equipment/exercise categories.md",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "Категорії вправ для цього спортзалу",
+  "summary": "Defines gym exercise categories by muscle group, movement pattern, physical quality, equipment type, and assignment rules.",
+  "scope": [
+    "exercise categorization system",
+    "muscle groups",
+    "movement patterns",
+    "physical qualities",
+    "gym equipment",
+    "exercise assignment rules"
+  ],
+  "cross_refs": [
+    "./all%20gym%20exercises.md",
+    "./exercises%20by%20category.md"
+  ],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}
