@@ -20,7 +20,7 @@ Roadmap послідовно створює довіру до даних: спо
 
 ### Phase 1: Довірений контракт даних
 **Goal**: Користувач може безпечно під’єднати authoritative Google Sheet і до імпорту зрозуміти, чи придатні його структура та факти.
-**Mode:** mvp
+**Mode:** standard
 **Depends on**: Nothing (first phase)
 **Requirements**: SRC-01, SRC-02, SRC-03, SRC-04
 **Success Criteria** (what must be TRUE):
