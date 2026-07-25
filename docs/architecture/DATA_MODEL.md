@@ -4,8 +4,8 @@
 
 **Status:** Accepted design contract
 
-**Applies to:** Google Sheets source, raw snapshots, normalization, SQLite mirror,
-metric evidence and future controlled write-back
+**Applies to:** Google Sheets source, controlled write-back, raw snapshots,
+normalization, SQLite mirror and metric evidence
 
 Машинозчитуваним джерелом цього контракту є
 [`config/schema.yaml`](../../config/schema.yaml). Цей документ пояснює його
@@ -15,6 +15,7 @@ metric evidence and future controlled write-back
 
 - [ADR-001: межі джерел правди](ADR-001-authority-boundaries.md);
 - [ADR-002: Python і SQLite](ADR-002-python-sqlite-v1.md);
+- [ADR-003: Spreadsheet-first продукт](ADR-003-spreadsheet-first-product.md);
 - [протокол синхронізації](SYNC_PROTOCOL.md);
 - [контракт метрик](METRICS.md);
 - [безпека і резервне відновлення](SECURITY_AND_BACKUP.md);
@@ -46,7 +47,7 @@ metric evidence and future controlled write-back
 | Виконані сесії | Google Sheets, `Сесії` | Незмінно захопити, перевірити, версіонувати і дзеркалити |
 | Виконані підходи | Google Sheets, `Підходи` | Незмінно захопити, перевірити, версіонувати і дзеркалити |
 | Operational prescriptions | Google Sheets, `Програма` | Перевірити версію та зберегти історичний зв’язок |
-| Журнал рекомендацій | Google Sheets, `Рекомендації` | У v1 лише читати; у майбутньому додавати через окремий allowlist |
+| Журнал рекомендацій | Google Sheets, `Рекомендації` | Читати та додавати через окремий allowlist, confirmation й stable-ID preconditions |
 | Схема, нормалізація, формули, executable rules | Git | Версіонувати код і декларативні контракти |
 | Raw snapshot, normalized data, SQLite, reports | Локальна система | Rebuildable projection, не незалежне джерело фактів |
 
@@ -193,7 +194,7 @@ Source Sheet приймає лише точні українські labels:
 
 ## 7. Source tabs і колонки
 
-Source workbook має рівно чотири обов’язкові вкладки:
+Source contract має рівно чотири обов’язкові authoritative domain tabs:
 
 ```text
 Програма
@@ -206,6 +207,10 @@ Exact український header, internal field, type, nullable, enum, range
 `data_class` кожної колонки визначені у
 `sheet_tabs` файла [`schema.yaml`](../../config/schema.yaml). Header row —
 перший. Переміщення або сортування data rows не змінює identity.
+
+Workbook також має support tabs `Старт`, `Довідники` та `Дашборд`, визначені
+у [workbook spec](../specs/SPEC-GOOGLE-SHEETS-WORKBOOK.md). Вони не входять
+до domain snapshot contract і не є джерелом виконаних фактів.
 
 Нижче наведено вичерпні internal fields. Цей список потрібний для людського
 review; runtime використовує YAML.

@@ -1,5 +1,9 @@
 # Architecture Review
 
+> **Historical review.** Цей документ описує попередній read-only milestone і
+> не є поточним product verdict. Spreadsheet-first scope прийнято в ADR-003;
+> актуальні requirement counts і phases визначаються новим GSD ingest.
+
 **Reviewed:** 2026-07-24
 
 **Method:** Open GSD document ingest, conflict synthesis, roadmapping and

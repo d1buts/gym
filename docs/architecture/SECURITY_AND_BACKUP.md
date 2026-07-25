@@ -1,15 +1,18 @@
 # Безпека, приватність і резервне відновлення
 
-**Version:** `security-backup-v1`
+**Version:** `security-backup-v2`
 
 **Status:** Accepted design contract
 
-**Applies to:** local CLI, Google Sheets read path, Git, snapshots, reports and backups
+**Applies to:** Spreadsheet product, ChatGPT tool adapter, Google Sheets read
+and controlled write paths, local analytics, Git, snapshots, reports and
+backups
 
 ## 1. Межі й модель загроз
 
-V1 читає персональні тренувальні факти з одного allowlisted Google Sheet,
-обробляє їх локально і не змінює source. Захищаються:
+Система читає персональні тренувальні факти з одного allowlisted Google Sheet
+і може додавати підтверджені session/set/recommendation bundles через окремий
+writer. Захищаються:
 
 - OAuth tokens, service-account keys та recovery keys;
 - Sheet locator і sharing metadata;
@@ -51,11 +54,11 @@ backup і вже опублікована Git history.
 rewrite система MUST виходити з того, що попередні public copies могли
 зберегтися. До зовнішнього рішення `PRIV-01` не може мати статус complete.
 
-## 3. Read-only Google authorization
+## 3. Розділені Google authorization profiles
 
-V1 MUST NOT запитувати write, Drive content/export або domain-wide
-delegation permissions. Core capture MUST працювати без Drive scope.
-Допустимі два least-privilege profiles.
+Analytical pull MUST NOT запитувати write, Drive content/export або
+domain-wide delegation permissions. Допустимі два least-privilege read
+profiles.
 
 ### 3.1 OAuth installed application
 
@@ -94,6 +97,26 @@ private key, token, raw Sheet locator або populated `.env` у Git
 тільки isolated service account, якому надано доступ виключно до target
 Sheet. Якщо ця ізоляція не доведена, використовується Sheets-only
 double-capture profile.
+
+### 3.3 Controlled writer
+
+Writer використовує окремий credential/token store і мінімальний Sheets
+write scope для одного allowlisted source. Він MUST NOT отримувати Drive
+content/export, sharing, permission-management, folder-wide або domain-wide
+access.
+
+Writer може виконувати лише fixed operations із
+[ChatGPT integration contract](../specs/SPEC-CHATGPT-WORKOUT-CAPTURE.md):
+
+- читати contract/program preconditions;
+- додавати allowlisted session, set, recommendation та audit fields одним
+  bounded batch;
+- перевіряти власний committed bundle.
+
+Arbitrary A1 range, formula, formatting, sharing і deletion parameters не
+приймаються з model output. Кожен write потребує user confirmation token,
+idempotency key і expected versions. Writer credential не доступний
+read/analytics process або моделі.
 
 ## 4. Sheet allowlist і source binding
 
@@ -151,12 +174,19 @@ Redaction MUST виконуватися до formatting, persistence і exceptio
 reporting. Unknown external error payload вважається sensitive by default.
 Debug mode не скасовує redaction.
 
-V1 analytics є local deterministic workflow. Raw/normalized rows, reports,
-notes та health context MUST NOT надсилатися до LLM, ChatGPT, hosted error
-tracking, product analytics або unrelated API. Network allowlist під час
-pull обмежується Google authentication/Sheets endpoints; remote backup
-отримує лише client-side encrypted bundle. Майбутній LLM workflow потребує
-окремого opt-in threat review і data-minimization contract.
+Analytics залишається local deterministic workflow. Для конкретного capture
+або analysis request до ChatGPT MAY передаватися лише:
+
+- текст тренування, який користувач свідомо ввів у поточний чат;
+- мінімальні allowlisted довідники для normalization;
+- bounded aggregates або evidence, явно потрібні користувацькому запиту.
+
+Bulk raw/normalized rows, full reports, unrelated notes/health context,
+credentials і Sheet locator MUST NOT надсилатися до LLM, hosted error
+tracking, product analytics або unrelated API. Tool adapter виконує
+data-minimization до model boundary. Network allowlist pull/writer
+обмежується Google authentication/Sheets endpoints; remote backup отримує
+лише client-side encrypted bundle.
 
 ## 7. Git safety і full-history scan
 

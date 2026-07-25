@@ -1,4 +1,4 @@
-# ADR-002: Python і SQLite для локального v1
+# ADR-002: Python і SQLite для локального аналітичного контуру
 
 - **Status:** Accepted
 - **Date:** 2026-07-24
@@ -6,9 +6,11 @@
 
 ## Context
 
-V1 є локальним CLI для schema validation, Google Sheets pull,
-нормалізації, аналітики, звітів і restore verification. Вебінтерфейс,
-multi-user і server API не входять до поточного milestone.
+Локальний контур виконує schema validation, Google Sheets pull,
+нормалізацію, аналітику, звіти й restore verification. Згідно з ADR-003,
+основним користувацьким продуктом є Google Spreadsheet із контрольованою
+ChatGPT integration; локальний CLI є її допоміжним validation/analytics
+layer. Multi-user і server database не входять до поточного milestone.
 
 ## Decision
 
@@ -26,7 +28,8 @@ multi-user і server API не входять до поточного milestone.
 
 ## Consequences
 
-- V1 не залежить від server database.
+- Перший milestone не залежить від server database.
+- Spreadsheet лишається придатною для ручного використання без локального CLI.
 - Business logic не повинна залежати від CLI framework або Google client.
 - Raw capture, normalization, reconciliation, metrics і rendering мають
   окремі модульні межі.

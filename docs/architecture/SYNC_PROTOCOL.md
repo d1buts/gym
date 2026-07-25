@@ -4,7 +4,7 @@
 - **Версія протоколу:** `sync-protocol-v1`
 - **Дата:** 2026-07-24
 - **Покриває:** `SRC-01..04`, `SYNC-01..05`
-- **Напрямок v1:** лише читання Google Sheets; локальні записи дозволені
+- **Напрямок цього протоколу:** лише читання Google Sheets; локальні записи дозволені
 
 ## 1. Призначення і межі
 
@@ -23,9 +23,13 @@ Google Sheets володіє operational facts. Raw snapshot, staging та SQLit
 [ADR-001](./ADR-001-authority-boundaries.md), runtime і SQLite — в
 [ADR-002](./ADR-002-python-sqlite-v1.md).
 
-V1 не записує жодної клітинки, властивості, permission або metadata назад у
-Google Workspace. Workout capture, recommendation write-back і будь-який
-двосторонній sync є v2 scope.
+Цей pull protocol не записує жодної клітинки, властивості, permission або
+metadata назад у Google Workspace. Контрольований capture/recommendation
+write-back входить до першого milestone, але має окремі credentials,
+preconditions та atomic bundle protocol у
+[SPEC-CHATGPT-WORKOUT-CAPTURE.md](../specs/SPEC-CHATGPT-WORKOUT-CAPTURE.md).
+Це не двосторонній sync: writer додає allowlisted authoritative records, а
+цей документ визначає незалежне відтворюване читання.
 
 ## 2. Нормативна мова та залежні контракти
 

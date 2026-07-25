@@ -1,108 +1,132 @@
-# Workout Tracker: архітектура v1
+# Workout Tracker: архітектура Spreadsheet-first продукту
 
 **Status:** implementation contract
 
 **Updated:** 2026-07-24
 
-**Runtime:** Python 3.12+ local CLI
-**Current milestone:** read-only sync, analytics, evidence report and restore
+**Primary product:** Google Spreadsheet
 
-Цей документ є оглядом системи. Нормативні деталі розміщені в
-[docs/architecture](docs/architecture/ARCHITECTURE_REVIEW.md), машинозчитувані
-контракти — у [config](config/schema.yaml), а scope і delivery order — у
-[.planning](.planning/PROJECT.md).
+**Integration:** versioned ChatGPT plugin/MCP tools
+**Analytics runtime:** Python 3.12+, Pydantic, SQLite
 
-## 1. Мета
+Цей документ є системним оглядом. Нормативні рішення розміщені в
+[docs/architecture](docs/architecture/README.md), продуктові вимоги — у
+[PRD](docs/prd/PRD-GOOGLE-SHEETS-WORKOUT-COACH.md), integration/workbook
+контракти — у [docs/specs](docs/specs/SPEC-GOOGLE-SHEETS-WORKBOOK.md), а
+машинозчитувані схеми й правила — у [config](config/schema.yaml).
 
-Workout Tracker повинен однією повторюваною CLI-командою:
+## 1. Кінцева ціль
 
-1. безпечно прочитати авторитетні дані з Google Sheets;
-2. перевірити контракт і якість рядків;
-3. створити immutable raw snapshot;
-4. побудувати ідемпотентне SQLite-дзеркало;
-5. обчислити версійовані метрики;
-6. створити відтворюваний звіт із evidence lineage;
-7. довести, що backup відновлюється.
+Workout Tracker забезпечує повний контрольований цикл:
 
-Система не повинна вигадувати пропущені значення, змішувати непорівнювані
-вправи або подавати медичний висновок як тренувальну аналітику.
+```text
+чотири комплекси в Google Spreadsheet
+→ виконане тренування
+→ ручний або ChatGPT capture
+→ підтверджений атомарний запис
+→ перевірена історія та метрики
+→ evidence-backed recommendation
+→ явне рішення користувача
+```
 
-## 2. Scope v1
+Spreadsheet має залишатися якісним самостійним продуктом: план і ручне
+внесення доступні навіть без ChatGPT або локального аналітичного контуру.
+
+## 2. Scope першого milestone
 
 ### Входить
 
-- exact schema validation чотирьох вкладок;
-- read-only Google Sheets pull;
-- immutable snapshots і quarantine evidence;
-- deterministic normalization;
-- SQLite current projection, history і tombstones;
-- історія за workout type, exercise і date range;
-- working-set, repetition, load, e1RM, RIR, rest і recovery metrics;
-- one-command evidence report;
-- repository privacy check;
-- portable backup та isolated restore verification.
+- repeatable setup семи вкладок, validation, protections, formulas і dashboard;
+- bootstrap чотириденної Upper/Lower програми з repository specifications;
+- ручний mobile-friendly capture;
+- ChatGPT preview, clarification, confirmation та allowlisted write-back;
+- stable IDs, idempotency й atomic session/set bundle semantics;
+- read-only coherent snapshots та rebuildable SQLite mirror;
+- versioned metrics, history queries і evidence reports;
+- deterministic progression та окремі AI-generated recommendations;
+- privacy controls, audit, backup і isolated restore verification.
 
 ### Не входить
 
-- workout capture у Google Sheets;
-- будь-який write-back;
-- generated progression або AI recommendations;
-- автоматична зміна програми;
-- Telegram, mobile, web, voice або wearable UI;
-- multi-user, authentication і server database;
-- медичні діагнози, лікування чи medication advice.
+- multi-user coaching platform;
+- довільне редагування Sheet моделлю;
+- автоматичне застосування program changes;
+- wearable/background health ingestion;
+- медичні діагнози, лікування або причинні health claims;
+- server database як primary source of truth.
 
-Повний scope: [.planning/REQUIREMENTS.md](.planning/REQUIREMENTS.md).
+Повний scope визначає
+[PRD](docs/prd/PRD-GOOGLE-SHEETS-WORKOUT-COACH.md).
 
 ## 3. Джерела правди
 
-Кожен клас інформації має одного власника.
-
-| Інформація | Власник | Локальна роль |
+| Інформація | Власник | Інші представлення |
 |---|---|---|
-| Виконані сесії та підходи | Google Sheets | Immutable snapshot і rebuildable mirror |
-| Operational program versions | Google Sheets `Програма` | Validated versioned projection |
-| Зовнішні recommendations | Google Sheets `Рекомендації` | Read-only history |
-| Sheet schema і normalization | Git `config/schema.yaml` | Executable contract |
-| Progression rules і formulas | Git `config/` та architecture specs | Versioned executable rules |
-| Metrics і reports | Локальний код | Derived, reproducible artifacts |
-| SQLite | Ніхто як primary owner | Rebuildable analytical store |
+| Виконані сесії й підходи | Google Sheets | snapshots і rebuildable mirror |
+| Operational program versions | Google Sheets `Програма` | bootstrap spec і validated projection |
+| Recommendation history | Google Sheets `Рекомендації` | evidence projection |
+| Schema, formulas, normalization | Git | generated workbook objects |
+| Executable progression rules | Git | deterministic outcomes |
+| Dashboard cells/charts | Ніхто як primary owner | derived from authoritative tabs |
+| SQLite | Ніхто як primary owner | rebuildable analytical store |
 
-Подробиці й наслідки:
-[ADR-001](docs/architecture/ADR-001-authority-boundaries.md).
+Рядок, дата, назва вправи або content hash не є identity. Обов’язкові
+source-owned `program_item_id`, `session_id`, `set_id` і `recommendation_id`.
+
+Нормативне рішення:
+[ADR-001](docs/architecture/ADR-001-authority-boundaries.md) та
+[ADR-003](docs/architecture/ADR-003-spreadsheet-first-product.md).
 
 ## 4. System context
 
 ```mermaid
 flowchart LR
-    U["Користувач / телефон"] --> G["Google Sheets"]
-    G --> P["Read-only pull"]
-    P --> R["Immutable raw snapshot"]
-    R --> V["Validation + quarantine"]
-    V --> N["Versioned normalization"]
-    N --> S["SQLite staging"]
-    S --> M["Atomic mirror promotion"]
-    M --> A["Metrics"]
-    A --> O["Evidence-backed report"]
-    R --> B["Encrypted backup"]
-    B --> X["Isolated restore verification"]
+    U["Користувач / телефон"] --> C["ChatGPT"]
+    U --> G["Google Spreadsheet"]
+    C --> P["preview_workout"]
+    P --> Q{"Явне підтвердження"}
+    Q -->|так| W["allowlisted writer"]
+    W --> G
+    Q -->|ні| Z["без змін"]
+    G --> R["read-only coherent pull"]
+    R --> V["validation + immutable snapshot"]
+    V --> S["SQLite mirror"]
+    S --> A["versioned analytics"]
+    A --> D["Dashboard / query tools"]
+    A --> E["evidence-backed recommendation"]
+    E --> G
+    G --> B["encrypted backup + restore test"]
 ```
 
-V1 не має стрілки назад у Google Sheets.
+Read і write credentials розділені. Модель не бачить credentials, live Sheet
+locator і не має arbitrary cell/range tool.
 
-## 5. Google Sheets contract
+## 5. Workbook contract
 
-Очікуються рівно чотири operational tabs:
+Керовані вкладки:
 
+- `Старт`;
 - `Програма`;
 - `Сесії`;
 - `Підходи`;
-- `Рекомендації`.
+- `Рекомендації`;
+- `Довідники`;
+- `Дашборд`.
 
-Українські labels є authoritative. English values на кшталт
-`upper_strength` — лише internal aliases.
+Перші чотири domain tabs — `Програма`, `Сесії`, `Підходи`,
+`Рекомендації` — є authoritative для operational records. Решта є
+інтерфейсом, configuration projection або derived output.
 
-Дозволені workout types:
+Українські назви й labels є exact source values. English snake_case values є
+internal aliases. Формули та protected/system columns не змішуються з
+користувацьким вводом.
+
+Повний контракт:
+[SPEC-GOOGLE-SHEETS-WORKBOOK.md](docs/specs/SPEC-GOOGLE-SHEETS-WORKBOOK.md).
+
+## 6. Program bootstrap
+
+Workbook містить чотири комплекси:
 
 | Source label | Internal code |
 |---|---|
@@ -111,22 +135,45 @@ V1 не має стрілки назад у Google Sheets.
 | `Верх — гіпертрофія` | `upper_hypertrophy` |
 | `Низ — гіпертрофія` | `lower_hypertrophy` |
 
-Required stable identities:
+Bootstrap зберігає order/pair, exact variant, equipment/setup, sets, reps або
+duration, RIR, rest і optional semantics. Уже використана program version є
+immutable; зміна prescription створює нову `program_version_id`.
 
-- `program_item_id`;
-- `session_id`;
-- `set_id`;
-- `recommendation_id`.
+Repository program Markdown є bootstrap specification, а не паралельним
+власником historical prescriptions.
 
-Row number, date, exercise name, set ordinal і content hash не можуть бути
-identity. Existing rows without IDs require a one-time reviewed migration
-while the Sheet is frozen.
+## 7. ChatGPT capture and write safety
 
-Повний field/type/null/unit contract:
-[DATA_MODEL.md](docs/architecture/DATA_MODEL.md) і
-[schema.yaml](config/schema.yaml).
+Стабільна межа інтеграції — versioned tool schemas:
 
-## 6. Data model principles
+- `preview_workout`;
+- `commit_workout`;
+- `query_training_history`;
+- `analyze_progress`;
+- `propose_recommendations`.
+
+Write protocol:
+
+```text
+user-authored description
+→ normalization without invented values
+→ missing/ambiguity check
+→ human-readable preview
+→ explicit confirmation
+→ contract/program preconditions
+→ idempotent bounded batch write
+→ committed bundle marker
+→ redacted audit outcome
+```
+
+`commit_workout` приймає confirmation token, preview hash,
+`idempotency_key` та expected contract/program versions. Retry не створює
+дубль. Invalid або partial bundle не стає видимим readers.
+
+Нормативний контракт:
+[SPEC-CHATGPT-WORKOUT-CAPTURE.md](docs/specs/SPEC-CHATGPT-WORKOUT-CAPTURE.md).
+
+## 8. Data model principles
 
 ### Identity and revision
 
@@ -137,283 +184,147 @@ Source-owned identity не змінюється при factual correction. Зм�
 source identity → immutable content revision → snapshot occurrence
 ```
 
-Кожна occurrence зберігає:
-
-- `snapshot_id`;
-- source tab і numeric sheet ID;
-- diagnostic row locator;
-- raw row hash;
-- schema і normalizer versions;
-- validation outcome.
-
-### Program history
-
-Кожна нова session має `program_version_id`. Уже використану program version
-не редагують: створюють нову.
-
 ### Logical sets
 
-Один set може бути:
+Set має logical header і один або кілька components, тому bilateral,
+`each_side`, окремі `left`/`right`, duration і repetition sets не
+спотворюються fake reps або дубльованими prescribed sets.
 
-- bilateral;
-- однаковий `each_side`;
-- окремий `left` і `right`;
-- repetition-based;
-- duration-based.
+### Load and comparison
 
-Тому set складається з logical header і одного або кількох components.
-Bulgarian split squat для правої та лівої ноги залишається одним prescribed
-set, а side plank зберігає seconds, не fake reps.
+Зберігаються source value, unit, basis, loading kind, implement count, exact
+variant, equipment і setup/comparison cohort. Machine display, free-weight
+total, per-dumbbell load та assistance не змішуються.
 
-### Load
+Повний field/type/null/unit contract:
+[DATA_MODEL.md](docs/architecture/DATA_MODEL.md) і
+[schema.yaml](config/schema.yaml).
 
-Unitless load заборонений. Потрібні:
+## 9. Read, snapshot and mirror protocol
 
-- `load_value`;
-- `load_unit`;
-- `load_basis`;
-- `loading_kind`;
-- `implement_count`;
-- exact exercise variant, equipment і setup/comparison cohort.
-
-Machine display, free-weight total, per-dumbbell load і assistance не
-змішуються.
-
-## 7. Pull and reconciliation protocol
+Аналітичний контур працює незалежно від writer:
 
 ```text
 exclusive lock
-→ preflight
 → source version before
-→ coherent four-tab capture
+→ coherent four-domain-tab capture
 → source version after
 → immutable snapshot commit
 → validate and quarantine
 → deterministic normalize
 → stage and diff
 → atomic SQLite promotion
-→ manifest and audit summary
 ```
 
-Ключові гарантії:
+Гарантії:
 
-- credentials мають read-only scope;
-- source version change під час capture скасовує attempt;
-- partial capture ніколи не отримує `COMPLETE`;
-- invalid session або child set quarantine-ить увесь session bundle;
-- rejected authoritative entity за замовчуванням не дозволяє замінити active
-  mirror;
-- repeated identical snapshot не створює domain/history versions;
-- correction під тим самим ID створює одну revision;
-- coherent disappearance створює tombstone, але не стирає history;
-- mirror tables і `current_snapshot_id` змінюються однією транзакцією;
+- read-only credential для pull;
+- invalid session/child-set bundle quarantine-иться разом;
+- повторний logical input не змінює mirror;
+- correction створює одну revision;
+- coherent disappearance створює tombstone, не стираючи history;
 - failure залишає попередній complete mirror активним.
 
 Нормативний protocol:
 [SYNC_PROTOCOL.md](docs/architecture/SYNC_PROTOCOL.md).
 
-## 8. Local storage
+## 10. Metrics and dashboard
 
-```text
-data/
-├── raw/<snapshot_id>/       immutable source capture
-├── processed/               rebuildable normalized exports
-├── quarantine/              diagnostics, not active data
-├── backups/                 encrypted portable archives
-└── workout-tracker.sqlite   rebuildable analytical store
-```
+Warm-ups та invalid/aborted sets не рахуються як working volume. Missing або
+incomparable input повертає status і `NULL`, не zero.
 
-Raw snapshot завершується content hashes, manifest і `COMPLETE` marker.
-Consumers не читають `.staging` або snapshot без valid manifest.
+Порівняння дозволене лише в одному cohort за exact variant, equipment, setup,
+load basis і assistance semantics. e1RM використовує pinned formula та
+eligibility window. Recovery analysis є descriptive, не causal.
 
-SQLite містить:
-
-- current source projections;
-- immutable source revision history;
-- snapshot occurrences;
-- quarantine diagnostics;
-- metric results and evidence;
-- sync run ledger;
-- active mirror head.
-
-Source facts і derived metrics перебувають у різних tables.
-
-## 9. Metrics
-
-`Volume` не є одним числом. V1 окремо визначає:
-
-- completed working-set count;
-- repetition volume;
-- eligible load volume;
-- primary muscle-group set volume.
-
-Додатково:
-
-- maximum load порівнюється лише в одному comparison cohort;
-- e1RM використовує `epley-v1`, working sets і 1–12 reps;
-- missing або ambiguous inputs дають `NULL` зі status/reason;
-- timed, bodyweight, assistance й incomparable machine work не стають
-  нульовим tonnage;
-- RIR не вгадується;
-- rest means `rest_after_set_seconds`, а `between_sides_seconds` зберігається
-  окремо;
-- recovery comparisons у v1 є descriptive, не causal.
-
-Кожна metric зберігає formula version, canonical parameters, input IDs,
-included/excluded evidence та exclusion reasons.
+Кожна metric має formula version, parameters, input IDs, included/excluded
+evidence та exclusion reasons. Sheet formulas, dashboard і local analytics
+мають однакову семантику.
 
 Нормативні формули:
 [METRICS.md](docs/architecture/METRICS.md).
 
-## 10. Reports and reproducibility
-
-Report identity визначається:
-
-- snapshot і per-tab hashes;
-- code commit;
-- source schema, normalizer, taxonomy, program і formula versions;
-- canonical CLI parameters;
-- timezone і deterministic ordering.
-
-Generated timestamp і output path не входять до substantive hash.
-
-Однакові inputs і versions мають давати однаковий substantive report hash.
-Зміна одного set повинна змінити лише metrics, що посилаються на цей set у
-dependency evidence.
-
 ## 11. Progression and recommendations
 
-V1 не генерує progression output.
+Deterministic progression — pure result версійованого ruleset. AI
+recommendation — окрема immutable сутність з evidence window, rationale,
+limitations і status.
 
-У майбутньому:
-
-- deterministic standard step є pure versioned rule;
-- одне session occurrence достатнє лише після повної перевірки prescribed
-  sets, reps, RIR, technique, pain, program version, comparison cohort та
-  configured increment;
-- analytical program change потребує щонайменше трьох comparable session
-  occurrences;
-- trend evidence: менше 6 — insufficient, 6–7 — provisional, 8+ — normal;
-- missing pain, technique або RIR не означає pass.
+Недостатні або непорівнювані дані дають `insufficient_evidence`. Рекомендація
+не змінює `Програма`; прийнята зміна потребує explicit owner approval і нової
+program version.
 
 Ruleset:
 [progression-rules.yaml](config/progression-rules.yaml).
 
-## 12. Security and privacy
+## 12. Privacy and medical boundary
 
-- Немає live Sheet locator у tracked config або docs.
-- Tokens зберігаються в OS secure storage або viewer-only service-account
-  credential file поза репозиторієм.
-- Core v1 запитує тільки Sheets read-only access.
-- Local data directories мають private permissions.
-- Logs не містять tokens, notes, symptoms, body mass, Sheet locators або raw
-  rows.
-- Personal workout data не надсилаються до LLM або telemetry у v1.
-- `.gitignore` виключає credentials, exports, SQLite, reports, logs, backups
-  і local GSD attempts.
-
-Security audit виявив operational metadata в уже опублікованій історії.
-Current-file cleanup не стирає history; remote remediation потребує explicit
-owner authorization.
+- Secrets, live Sheet locator, exports, SQLite, reports, logs і backups не
+  потрапляють у Git.
+- Capture передає моделі лише user-authored content і мінімальні довідники,
+  потрібні для поточного запиту.
+- Analysis повертає мінімальні агрегати/evidence; bulk raw history і
+  unrelated health context не передаються.
+- Logs містять IDs, hashes, counts, versions та error codes, але не raw notes,
+  symptoms, body mass або row payloads.
+- Pain, soreness, sleep, stress, nausea, dizziness і performance не є
+  діагнозами. Система не призначає лікування й не стверджує медичну причинність.
 
 Повна policy:
 [SECURITY_AND_BACKUP.md](docs/architecture/SECURITY_AND_BACKUP.md).
 
 ## 13. Backup and restore
 
-V1 policy:
+Backup охоплює authoritative domain data, program versions, contract versions
+і rebuildable analytical state. Archive має manifest, checksums і encrypted
+copies у різних fault domains.
 
-- RPO не більше 24 hours;
-- backup після кожного successful validated pull і щонайменше daily;
-- 35 daily та 12 month-end verified backups;
-- дві encrypted copies у різних fault domains;
-- full isolated restore test щонайменше weekly.
+Restore запускається в isolated empty environment, перевіряє manifest,
+перебудовує mirror та зіставляє canary counts/hashes. Неповний archive не
+публікується як successful restore. Окрема restore-to-Sheets процедура
+потребує preview та explicit owner authorization.
 
-Restore працює offline в empty directory, перевіряє manifest/checksums,
-перебудовує новий SQLite, запускає foreign-key/integrity checks і canary
-metric/report hash. Неповний або змінений archive завершується nonzero й не
-публікує database як successful.
+## 14. Technology boundaries
 
-Restore-to-Google-Sheets не входить до v1.
+Згідно з
+[ADR-002](docs/architecture/ADR-002-python-sqlite-v1.md):
 
-## 14. Technology and repository layout
+- Python 3.12+;
+- uv-style dependency management;
+- Pydantic validation boundary;
+- SQLite rebuildable analytical store;
+- Decimal/scaled integers для authoritative numeric calculations;
+- pytest-compatible automated verification.
 
-Stack decision:
-[ADR-002](docs/architecture/ADR-002-python-sqlite-v1.md).
+Business logic не залежить від ChatGPT adapter, CLI framework або Google
+client. Workbook setup, writer, source pull, normalization, storage, metrics і
+recommendations мають окремі boundaries.
 
-```text
-workout-tracker/
-├── .planning/
-├── config/
-│   ├── schema.yaml
-│   ├── progression-rules.yaml
-│   └── settings.example.yaml
-├── docs/architecture/
-├── src/
-│   ├── source/
-│   ├── sync/
-│   ├── storage/
-│   ├── analytics/
-│   └── reporting/
-├── data/             # ignored
-├── reports/          # generated and ignored
-├── tests/
-├── .env.example
-├── .gitignore
-├── AGENTS.md
-└── README.md
-```
+## 15. Delivery strategy
 
-`src/`, `data/`, `reports/` і `tests/` створюються під час execution phases,
-а не як порожня architecture scaffold.
+Delivery має йти vertical slices:
 
-## 15. Observability and failures
+1. machine-readable workbook contract і test workbook;
+2. якісний workbook із чотирма комплексами;
+3. preview/confirm/idempotent ChatGPT capture;
+4. coherent mirror та history queries;
+5. dashboard, metrics і evidence reports;
+6. recommendations, privacy audit та verified restore.
 
-Кожен run має:
-
-- `run_id` і `snapshot_id`;
-- stage durations;
-- retry counts;
-- per-tab fetched/accepted/rejected/inserted/updated/unchanged/tombstoned
-  counts;
-- stable error codes;
-- machine-readable manifest;
-- redacted human summary.
-
-Suggested exit categories:
-
-| Code | Category |
-|---:|---|
-| 0 | success/no-op/warnings |
-| 10–12 | auth, remote or unstable source |
-| 20–21 | schema/identity or quarantined data |
-| 30–31 | lock, I/O, checksum or SQLite |
-| 40 | future write precondition conflict |
-| 70 | internal invariant violation |
-
-Manifest outcome є authoritative; exit code потрібен для automation.
-
-## 16. Delivery roadmap
-
-1. Довірений контракт даних.
-2. Ідемпотентне локальне дзеркало.
-3. Історія та базова аналітика.
-4. Відтворюваний звіт із доказами.
-5. Приватність і перевірене відновлення.
-
-Критерії та traceability:
+Точні фази та requirement traceability визначає
 [.planning/ROADMAP.md](.planning/ROADMAP.md).
 
-## 17. Definition of done for v1
+## 16. Definition of done
 
-V1 готовий лише коли:
+Перший milestone завершений лише коли:
 
-- 22/22 requirements verified;
-- source migration забезпечила всі stable IDs;
-- repeat pull і row reorder не створюють logical changes;
-- correction, tombstone, quarantine і injected-failure tests проходять;
-- metric eligibility/exclusion cases покриті fixtures;
-- identical inputs дають identical substantive report hash;
-- repository safety scan проходить;
-- backup успішно відновлений у clean offline location;
+- усі PRD requirements mapped рівно до однієї фази й verified;
+- clean workbook setup і повторний setup проходять UAT без logical diff;
+- чотири комплекси відповідають repository specifications;
+- preview/confirm/commit, retry, timeout і partial-failure tests проходять;
+- manual capture працює без ChatGPT;
+- dashboard і local metrics збігаються на canonical fixtures;
+- recommendation не змінює програму без explicit approval;
+- repository privacy scan проходить;
+- backup успішно відновлений у clean isolated environment;
 - remote public-history disclosure отримав явне owner disposition.

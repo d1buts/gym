@@ -4,9 +4,11 @@ These instructions apply to the entire repository.
 
 ## Mission
 
-Build a privacy-preserving, evidence-backed workout tracker whose local state
-can always be reconstructed from authoritative source data and versioned
-rules. Reliability and traceability take priority over feature count.
+Build a privacy-preserving, evidence-backed Spreadsheet-first workout tracker.
+Google Spreadsheet must be a high-quality standalone daily product; ChatGPT
+adds workouts through controlled tools; local state must remain reconstructable
+from authoritative source data and versioned rules. Reliability and
+traceability take priority over feature count.
 
 ## Read before changing anything
 
@@ -23,16 +25,21 @@ unless the GSD ingest workflow explicitly requires regeneration.
 
 ## Accepted decisions
 
-- Python 3.12+ local CLI.
+- Google Spreadsheet is the primary user product.
+- The first milestone includes four workout complexes, formulas, dashboard,
+  controlled ChatGPT capture/write-back, analytics and recommendations.
+- ChatGPT integration uses narrow versioned plugin/MCP tools with preview,
+  explicit confirmation, stable IDs and idempotency.
+- Python 3.12+ local validation and analytics CLI.
 - uv-style dependency management.
 - Pydantic validation boundary.
-- SQLite v1 analytical store.
+- SQLite rebuildable analytical store.
 - Google Sheets remains authoritative for operational facts and versioned
   program prescriptions.
 - Git owns schemas, normalization, formulas, executable rules, tests and
   documentation.
-- V1 is read-only. Workout capture, write-back and generated recommendations
-  are v2.
+- Analytical pulls are read-only. The writer uses a separate minimal
+  credential boundary and can only perform allowlisted bundle writes.
 
 Changing any of these requires an ADR and updates to `PROJECT.md`,
 `REQUIREMENTS.md`, roadmap traceability and affected contracts.
@@ -55,7 +62,11 @@ Changing any of these requires an ADR and updates to `PROJECT.md`,
 
 ## Sync safety
 
-- Use read-only Google authorization in v1.
+- Use read-only Google authorization for analytical pulls.
+- Keep writer authorization separate and minimal; no arbitrary cell/range
+  mutation.
+- Require preview, explicit confirmation, contract/version preconditions and
+  idempotency for every external write.
 - Capture all four expected tabs as one version-fenced unit.
 - Write immutable snapshots through staging and a completion marker.
 - Validate and normalize before opening the SQLite promotion transaction.
@@ -85,8 +96,10 @@ Changing any of these requires an ADR and updates to `PROJECT.md`,
   scan.
 - Do not change GitHub visibility, rewrite published history, rotate a Sheet
   or alter its sharing without explicit owner authorization.
-- Do not send workout or health-context data to an LLM, telemetry system or
-  external service as part of v1.
+- Send an LLM only the user-authored workout content and minimum
+  user-authorized context needed for the current capture or analysis request.
+  Never send bulk history, credentials, live locators, unrelated health
+  context or raw exports.
 
 ## Medical boundary
 
@@ -115,7 +128,8 @@ symptoms require a qualified medical professional.
 - Every v1 requirement must map to exactly one phase.
 - Do not mark a requirement complete until implementation, automated
   verification and required UAT/restore evidence all pass.
-- Keep phase work scoped; deferred v2 features must not leak into v1.
+- Keep phase work scoped; multi-user, wearables, arbitrary Sheet editing and
+  automatic program changes must not leak into the first milestone.
 
 ## Verification
 

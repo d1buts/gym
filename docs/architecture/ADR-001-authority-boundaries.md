@@ -3,6 +3,7 @@
 - **Status:** Accepted
 - **Date:** 2026-07-24
 - **Scope:** workout facts, program prescriptions, executable rules, local data
+- **Superseded in part by:** ADR-003 for controlled v1 write-back
 
 ## Context
 
@@ -63,9 +64,10 @@ projections. Вони не стають власниками тренуваль�
 - Позиція рядка не є identity.
 - Для `Сесії`, `Підходи`, `Програма` і `Рекомендації` потрібні source-owned
   stable IDs.
-- V1 використовує read-only authorization і не змінює Google Sheets.
-- Майбутній write-back має окремий allowlist, stable-ID preconditions та
-  explicit confirmation.
+- Аналітичний pull використовує read-only authorization.
+- Контрольований v1 write-back має окрему мінімальну credential boundary,
+  allowlist, stable-ID preconditions, idempotency та explicit confirmation
+  згідно з ADR-003.
 - Зміна ownership boundary потребує нового ADR і migration plan.
 
 ## Rejected alternatives

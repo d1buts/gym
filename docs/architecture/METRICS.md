@@ -4,12 +4,14 @@
 
 **Status:** Accepted design contract
 
-**Applies to:** v1 normalized data, SQLite analytics and substantive reports
+**Applies to:** normalized data, Sheet dashboard, SQLite analytics,
+deterministic progression and substantive reports
 
 ## 1. Мета і нормативна мова
 
-Цей документ визначає однакову семантику метрик для CLI, SQLite, тестів і
-звітів. `MUST`, `MUST NOT`, `SHOULD` і `MAY` мають нормативне значення.
+Цей документ визначає однакову семантику метрик для Sheet formulas/dashboard,
+CLI, SQLite, тестів і звітів. `MUST`, `MUST NOT`, `SHOULD` і `MAY` мають
+нормативне значення.
 Формули, eligibility та правила порівняння не можна змінювати без нового
 `formula_version` і regression fixtures.
 
@@ -510,16 +512,17 @@ MUST NOT його змінювати.
 
 ## 16. Межа deterministic analytics та AI
 
-V1 metric engine і substantive report є повністю deterministic та не
+Metric engine і substantive report є повністю deterministic та не
 викликають LLM. Missing values не заповнюються AI.
 
 Стандартна double progression — versioned deterministic program rule:
 одне виконання може кваліфікувати стандартний крок лише коли всі prescribed
 working sets досягли верхньої межі reps при target RIR, stable technique і
 без зростання pain. Сам факт qualification не дозволяє змінювати source
-records, а v1 recommendation output залишається out of scope.
+records. Перший milestone показує deterministic outcome окремо від AI
+recommendation.
 
-У ruleset `1.0.0` stable technique означає `technique_score >= 4`.
+У ruleset `1.1.0` stable technique означає `technique_score >= 4`.
 Pain gate проходить, коли максимальний `pain_score` поточної session дорівнює
 нулю або не перевищує попередню comparable session; без попереднього
 comparator ненульовий pain не є pass. Відсутнє значення technique або pain
@@ -534,8 +537,9 @@ performances; trend claim використовує поріг §10. Така р�
 - не може приховати missing/partial evidence;
 - має окремий recommendation ID, evidence, confidence і review date;
 - не є медичним діагнозом;
-- у v2 зберігається окремо від deterministic substantive payload.
+- зберігається окремо від deterministic substantive payload.
 
-Будь-який майбутній non-deterministic AI narrative є clearly labelled
-non-substantive appendix. Він не може змінювати metric values/statuses або
-використовуватися для перевірки reproducibility hash.
+Будь-який non-deterministic AI narrative є clearly labelled recommendation
+або non-substantive appendix. Він не може змінювати metric values/statuses,
+автоматично змінювати program prescription або використовуватися для
+перевірки reproducibility hash.
