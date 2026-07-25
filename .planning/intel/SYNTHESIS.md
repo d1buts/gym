@@ -2,54 +2,61 @@
 
 ## Corpus
 
-- Documents synthesized: 11
-- ADR: 0
-- SPEC: 2
-- PRD: 0
+- Documents synthesized: 21
+- ADR: 3
+- SPEC: 8
+- PRD: 1
 - DOC: 9
 - UNKNOWN: 0
-- Classification confidence: 11 high, 0 medium, 0 low
+- Classification confidence: 21 high, 0 medium, 0 low
 - Per-document precedence overrides: 0
-- Cross-reference cycle detection: passed, 0 cycles
-- Maximum graph depth: 3 classified nodes of 50; 4 nodes including an external leaf
+- Cross-reference cycle detection: passed, 0 synthesis-dependency cycles
+- Maximum traversal depth: below cap 50
 
-Percent-encoded references were decoded, source-relative paths were normalized,
-and duplicate edges were collapsed before three-color DFS. The 27 raw
-references produced 26 unique targets, 10 unique in-classification edges and
-16 external leaves.
-
-Non-conflict metadata notes:
-
-- `/home/muuser/bushuk-labs/gym/.planning/intel/classifications/all-gym-exercises-77306ec0.json`
-  names the equipment list twice after normalization; the duplicate edge was
-  collapsed.
-- `/home/muuser/bushuk-labs/gym/.planning/intel/classifications/WORKOUT-TRACKER-ARCHITECTURE-dec08252.json`
-  resolves `settings.example.yaml` at repository root, while the current file
-  is `/home/muuser/bushuk-labs/gym/config/settings.example.yaml`; this external
-  reference-hygiene issue does not create a cycle or semantic conflict.
+Source-relative paths and percent-encoded references were normalized before
+three-color DFS. Shorthand ADR mentions and external normative links were
+retained as provenance references; they do not require recursive content
+expansion and therefore do not create synthesis-dependency edges.
 
 ## Decisions
 
-- Decisions extracted: 0
-- Locked decisions: 0
-- Locked-decision source paths: none
+- Decisions extracted: 3
+- Locked decisions: 3
+- Locked-decision sources:
+  - /home/muuser/bushuk-labs/gym/docs/architecture/ADR-001-authority-boundaries.md
+  - /home/muuser/bushuk-labs/gym/docs/architecture/ADR-002-python-sqlite-v1.md
+  - /home/muuser/bushuk-labs/gym/docs/architecture/ADR-003-spreadsheet-first-product.md
 - Detail: /home/muuser/bushuk-labs/gym/.planning/intel/decisions.md
+
+ADR-003 explicitly supersedes only ADR-001's earlier read-only v1 consequence
+and refines ADR-002 by retaining Python/SQLite as an auxiliary layer. The
+accepted authority boundaries, runtime stack and Spreadsheet-first write path
+are complementary rather than contradictory.
 
 ## Requirements
 
-- Requirements extracted: 0
-- Requirement IDs: none
+- Requirements extracted: 26
+- Workbook: 5 (`REQ-WBK-01`–`REQ-WBK-05`)
+- ChatGPT capture: 6 (`REQ-CAP-01`–`REQ-CAP-06`)
+- Reading and analytics: 5 (`REQ-ANL-01`–`REQ-ANL-05`)
+- Recommendations: 5 (`REQ-REC-01`–`REQ-REC-05`)
+- Privacy, audit and recovery: 5 (`REQ-SAFE-01`–`REQ-SAFE-05`)
 - Competing acceptance variants: 0
 - Detail: /home/muuser/bushuk-labs/gym/.planning/intel/requirements.md
 
 ## Constraints
 
-- Constraints extracted: 29
+- Constraints extracted: 41
 - api-contract: 3
-- schema: 7
-- nfr: 7
-- protocol: 12
+- schema: 10
+- nfr: 10
+- protocol: 18
 - Detail: /home/muuser/bushuk-labs/gym/.planning/intel/constraints.md
+
+The constraints preserve the exact authority split, stable identity,
+version-fenced pull, atomic promotion, metric eligibility, workbook topology,
+controlled ChatGPT confirmation/write protocol, privacy boundary and isolated
+restore contract.
 
 ## Context
 
@@ -65,37 +72,21 @@ Non-conflict metadata notes:
 - Curated exercise-selection reference
 - Detail: /home/muuser/bushuk-labs/gym/.planning/intel/context.md
 
+Each topic retains attributed source notes fenced with a unique randomized
+untrusted-data marker; the complete authoritative document remains at its
+listed `source` path.
+
 ## Conflict Review
 
 - Unresolved blockers: 0
-- Competing variants: 0
+- Competing acceptance variants: 0
 - Auto-resolved precedence conflicts: 0
 - Routing status: ready
 - Report: /home/muuser/bushuk-labs/gym/.planning/INGEST-CONFLICTS.md
 
-The current sources are semantically aligned:
-
-- One fully qualifying exercise performance may trigger only the deterministic
-  standard progression step; analytical program changes require at least
-  three comparable performances, while v1 emits no progression output.
-- All session warm-ups fit the progression SPEC's `0–8` minute budget;
-  Lower Strength uses 7–8 minutes.
-- Session prescriptions total 13 mandatory quadriceps sets, up to 15 with the
-  optional lower-strength block, and 12 core sets, matching the program
-  overview.
-- Current architecture and progression prose use a generic medical/clinician
-  boundary and contain neither a live Sheet locator nor personalized
-  medication wording.
-
-Alignment sources:
-
-- source: /home/muuser/bushuk-labs/gym/4-day upper lower program/README.md
-- source: /home/muuser/bushuk-labs/gym/4-day upper lower program/01 upper strength.md
-- source: /home/muuser/bushuk-labs/gym/4-day upper lower program/02 lower strength.md
-- source: /home/muuser/bushuk-labs/gym/4-day upper lower program/03 upper hypertrophy.md
-- source: /home/muuser/bushuk-labs/gym/4-day upper lower program/04 lower hypertrophy.md
-- source: /home/muuser/bushuk-labs/gym/4-day upper lower program/05 progression and session rules.md
-- source: /home/muuser/bushuk-labs/gym/WORKOUT_TRACKER_ARCHITECTURE.md
+The PRD, SPECs and DOC context are aligned with all three locked ADRs. No
+lower-precedence statement required rewriting, and the single PRD cannot
+produce cross-PRD acceptance variants.
 
 ## Intel Files
 

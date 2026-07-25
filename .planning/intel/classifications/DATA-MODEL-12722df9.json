@@ -1,0 +1,37 @@
+{
+  "source_path": "/home/muuser/bushuk-labs/gym/docs/architecture/DATA_MODEL.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "Нормативний контракт даних",
+  "summary": "Визначає нормативну модель даних, ідентичність, версії, provenance, валідацію та контракти Google Sheets, нормалізації, SQLite і метрик.",
+  "scope": [
+    "Google Sheets source",
+    "controlled write-back",
+    "raw snapshots",
+    "normalization",
+    "SQLite mirror",
+    "metric evidence",
+    "source-owned identities",
+    "schema evolution",
+    "validation diagnostics"
+  ],
+  "cross_refs": [
+    "../../config/schema.yaml",
+    "ADR-001-authority-boundaries.md",
+    "ADR-002-python-sqlite-v1.md",
+    "ADR-003-spreadsheet-first-product.md",
+    "SYNC_PROTOCOL.md",
+    "METRICS.md",
+    "SECURITY_AND_BACKUP.md",
+    "../../config/progression-rules.yaml",
+    "../../.planning/REQUIREMENTS.md",
+    "config/schema.yaml",
+    "config/program.yaml",
+    "schema.yaml",
+    "../specs/SPEC-GOOGLE-SHEETS-WORKBOOK.md"
+  ],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

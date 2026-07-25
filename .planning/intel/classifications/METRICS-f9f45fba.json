@@ -1,0 +1,28 @@
+{
+  "source_path": "/home/muuser/bushuk-labs/gym/docs/architecture/METRICS.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "Нормативний контракт метрик",
+  "summary": "Визначає версіоновані формули, eligibility, cohort-сумісність, статуси, округлення, evidence lineage та межі deterministic analytics для workout tracker.",
+  "scope": [
+    "metric result model",
+    "working-set eligibility",
+    "volume metrics",
+    "Epley e1RM",
+    "RIR",
+    "rest",
+    "recovery context",
+    "comparison cohorts",
+    "descriptive trends",
+    "evidence lineage",
+    "substantive report hash",
+    "deterministic progression"
+  ],
+  "cross_refs": [
+    "../../config/progression-rules.yaml"
+  ],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

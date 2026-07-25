@@ -1,0 +1,23 @@
+{
+  "source_path": "/home/muuser/bushuk-labs/gym/docs/architecture/ADR-002-python-sqlite-v1.md",
+  "type": "ADR",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "ADR-002: Python і SQLite для локального аналітичного контуру",
+  "summary": "ADR фіксує Python 3.12+, Pydantic, SQLite, uv-style dependency management і pytest для локального validation та analytics контуру.",
+  "scope": [
+    "локальний аналітичний контур",
+    "Python 3.12+",
+    "uv-style dependency management",
+    "Pydantic validation boundary",
+    "SQLite analytical store",
+    "pytest-compatible tests",
+    "numeric calculations"
+  ],
+  "cross_refs": [
+    "ADR-003"
+  ],
+  "locked": true,
+  "precedence": null,
+  "notes": ""
+}

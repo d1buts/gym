@@ -13,17 +13,17 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-07-24)
+See: .planning/PROJECT.md (updated 2026-07-25)
 
-**Core value:** Одна повторювана CLI-команда перетворює всі authoritative Google Sheets facts на валідовані, ідемпотентні локальні дані та відтворюваний evidence-backed report.
-**Current focus:** Phase 1 — Довірений контракт даних
+**Core value:** Повний цикл «план → тренування → capture → verification → analysis → recommendation → explicit user decision» працює без прихованої ручної обробки та з traceable evidence.
+**Current focus:** Phase 1 — Standalone Workbook and Four Programs
 
 ## Current Position
 
-Phase: 1 of 5 (Довірений контракт даних)
+Phase: 1 of 5 (Standalone Workbook and Four Programs)
 Plan: 0 of TBD in current phase
-Status: Ready to plan
-Last activity: 2026-07-24 — Створено ingest-based project context, 22 v1 requirements і roadmap із повним traceability.
+Status: Ready to discuss/plan
+Last activity: 2026-07-25 — Planning artifacts rebaselined from ingested authoritative documents
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -31,8 +31,8 @@ Progress: [░░░░░░░░░░] 0%
 
 **Velocity:**
 - Total plans completed: 0
-- Average duration: —
-- Total execution time: 0.0 hours
+- Average duration: -
+- Total execution time: 0 hours
 
 **By Phase:**
 
@@ -41,8 +41,8 @@ Progress: [░░░░░░░░░░] 0%
 | - | - | - | - |
 
 **Recent Trend:**
-- Last 5 plans: —
-- Trend: No data
+- Last 5 plans: -
+- Trend: Not enough data
 
 *Updated after each plan completion*
 
@@ -50,12 +50,11 @@ Progress: [░░░░░░░░░░] 0%
 
 ### Decisions
 
-Повний decision log міститься в `PROJECT.md`. Останні рішення, що впливають на роботу:
+Decisions are logged in PROJECT.md Key Decisions table.
 
-- [Initialization]: Python 3.12+ local CLI, uv-style dependencies, Pydantic, SQLite і pytest-compatible design прийняті користувачем.
-- [Initialization]: Google Sheets є authoritative source; local store — analytical copy.
-- [Initialization]: v1 обмежено validated pull, analytics, evidence report, privacy і tested restore; capture/write-back та recommendations відкладено.
-- [Initialization]: Ingest містив 0 ADR; source-derived decisions не є `LOCKED` і мають provenance у `PROJECT.md`.
+- ADR-001 LOCKED: Sheets/Git/local authority boundaries and source-owned stable identity.
+- ADR-002 LOCKED: Python 3.12+, uv-style dependencies, Pydantic and rebuildable SQLite.
+- ADR-003 LOCKED: Spreadsheet-first product with narrow confirmed idempotent ChatGPT writes.
 
 ### Pending Todos
 
@@ -63,31 +62,17 @@ None yet.
 
 ### Blockers/Concerns
 
-- External privacy blocker: already-published public history містить
-  operational locator і персональний context; visibility/history/Sheet
-  remediation потребує explicit owner action.
-- Реальні Google Sheets credentials, source migration до stable IDs і
-  data-quality assumptions потрібно перевірити у Phase 1.
-- Set identity, correction/tombstone semantics, units, laterality, timed sets
-  і metric formulas зафіксовані в architecture contracts та мають бути
-  реалізовані без спрощення.
-- Core v1 auth залишається read-only; service-account versus desktop OAuth є
-  implementation choice з Sheet allowlist.
-- Exact report presentation залишається implementation choice, але evidence
-  і substantive-hash contract уже нормативні.
-- Recommendation thresholds і program semantics треба зберегти як constraints, навіть хоча recommendation engine відкладений до v2.
+- No active blocker. External Google credentials, live Sheet locator and owner-authorized restore target must remain outside Git and are needed only when their execution plans reach controlled integration/UAT.
+- Requirement status remains Pending until implementation, automated verification and required UAT/restore evidence all pass.
 
 ## Deferred Items
 
 | Category | Item | Status | Deferred At |
 |----------|------|--------|-------------|
-| Capture | ChatGPT/phone workout capture і controlled write-back | v2 | Initialization |
-| Recommendations | Deterministic progression output та evidence-threshold recommendation engine | v2 | Initialization |
-| Interfaces | Telegram/mobile/web/voice/wearables | v2 | Initialization |
-| Platform | PostgreSQL/Supabase після появи multi-user/auth/API needs | Conditional v2+ | Initialization |
+| Scope | Multi-user, wearables, arbitrary Sheet editing, automatic program changes, server database | Out of scope | Project initialization |
 
 ## Session Continuity
 
-Last session: 2026-07-24
-Stopped at: Planning artifacts created; Phase 1 ready for discussion or planning.
+Last session: 2026-07-25
+Stopped at: Roadmap created; Phase 1 is ready for discuss/plan
 Resume file: None

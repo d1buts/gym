@@ -1,108 +1,71 @@
 # Workout Tracker
 
-## What This Is
+## Що це
 
-Workout Tracker — персональний локальний CLI для власника чотириденної програми `Upper/Lower`, який забирає авторитетні тренувальні факти з Google Sheets, перевіряє їх, будує ідемпотентне аналітичне дзеркало в SQLite та створює відтворюваний звіт прогресу. Система зберігає Google Sheets єдиним джерелом правди, а локальні дані використовує для запитів, розрахунків, доказів і перевіреного резервного відновлення.
+Workout Tracker — приватний Spreadsheet-first трекер тренувань для одного власника. Google Spreadsheet є повноцінним щоденним продуктом для програми, ручного введення, перегляду прогресу й рішень, а вузькі версійовані ChatGPT plugin/MCP tools додають контрольоване capture/write-back; локальний Python 3.12+ контур перевіряє, дзеркалить та аналізує авторитетні дані у rebuildable SQLite.
 
 ## Core Value
 
-Одна повторювана CLI-команда перетворює всі авторитетні факти з Google Sheets на валідовані, ідемпотентні локальні дані та відтворюваний звіт із простежуваними доказами.
+Повний цикл «план → тренування → capture → verification → analysis → recommendation → explicit user decision» працює без прихованої ручної обробки, а кожен результат можна простежити до авторитетних фактів і версійованих правил.
 
-## Requirements
+## Вимоги
 
 ### Validated
 
-(Поки немає — цінність буде підтверджена після реалізації та перевірки)
+(Ще немає — цінність підтверджується після реалізації, automated verification та обов’язкового UAT/restore evidence.)
 
 ### Active
 
-- [ ] Користувач може безпечно під’єднати Google Sheet і до імпорту перевірити його структуру та якість даних.
-- [ ] Користувач може отримати повне, нормалізоване й ідемпотентне SQLite-дзеркало вкладок `Програма`, `Сесії`, `Підходи` і `Рекомендації`.
-- [ ] Користувач може запитувати історію тренувань і вправ та обчислювати volume, working load, e1RM, RIR, rest і recovery trends.
-- [ ] Користувач може однією командою створити відтворюваний звіт, у якому кожен висновок має зв’язок із вихідними сесіями, підходами та snapshot.
-- [ ] Користувач може довести, що секрети й персональні експорти не відстежуються Git, а резервна копія справді відновлюється.
+- [ ] Самодостатній Google Spreadsheet із точними сімома вкладками, чотирма версійованими комплексами, безпечним mobile input, визначеними formulas/dashboard та ідемпотентним setup.
+- [ ] Natural-language capture через вузькі ChatGPT tools із preview, explicit confirmation, stable IDs, idempotency, atomic allowlisted write та мінімальним model egress.
+- [ ] Read-only coherent pull у rebuildable SQLite mirror і фільтрована аналітика зі спільними versioned metric semantics, comparable cohorts та evidence lineage.
+- [ ] Чітко відокремлені deterministic progression results і evidence-backed recommendations, які не змінюють програму без explicit owner approval.
+- [ ] Privacy, redacted audit, portable backup та verified isolated restore як release gates.
 
 ### Out of Scope
 
-- Автоматичне масове або непомітне перезаписування первинних тренувальних записів — суперечить політиці єдиного джерела правди.
-- Заміна Google Sheets як authoritative store у v1 — міграція primary store можлива лише в post-v1 після появи multi-user, authentication або складнішого API.
-- Медичні діагнози, дозування ліків або поради щодо лікування й харчування при виражених побічних реакціях — це зона відповідальності кваліфікованого медичного фахівця.
-- Використання `.gsheet` як аналітичного input чи надійної резервної копії — файл є посиланням, а не довговічною копією даних.
-- Автоматичне перетворення поточної програми на full circuit або зміна програми без достатніх доказів — це не входить до доказового v1 workflow.
-- Припущення про непідтверджене обладнання чи підтримку вправ, для яких потрібні відсутні засоби — джерельний каталог навмисно обмежений підтвердженим інвентарем.
+| Функція | Причина |
+|---------|---------|
+| Multi-user, ролі та shared tenancy | Перший milestone є приватним single-owner продуктом. |
+| Wearables та автоматичний імпорт із fitness platforms | Не потрібні для основного циклу й розширюють privacy boundary. |
+| Arbitrary Sheet cell/range editing через ChatGPT | Суперечить allowlisted writer boundary та принципу least privilege. |
+| Automatic program changes | Prescription змінюється лише після explicit owner approval і створення нової `program_version_id`. |
+| Server database або обов’язковий hosted backend | SQLite є локальним rebuildable analytical store; Spreadsheet має працювати самостійно. |
+| Medical diagnosis, treatment або causal health claims | Recovery context у v1 є лише self-reported descriptive context. |
 
-## Context
+## Контекст
 
-- Проєкт створюється з ingest-корпусу з 11 документів: 2 `SPEC`, 9 `DOC`, 0 `PRD` і 0 `ADR`. У джерелах виділено 29 constraints; conflict review має 0 blockers, 0 warnings і 0 info.
-- Через відсутність `PRD` атомарні v1-вимоги виведено з architecture goals, version-one quality bar, user-supplied developer-facing success metric від 2026-07-24, workout/program context і прийнятих узгоджень.
-- Поточна програма має рівно чотири authoritative source labels:
-  `Верх — сила`, `Низ — сила`, `Верх — гіпертрофія`,
-  `Низ — гіпертрофія`. English codes є лише internal aliases.
-- Програма використовує paired sets, зберігає головні силові рухи та відпочинок у межах 60-хвилинного бюджету й не повинна перетворюватися на метаболічний circuit.
-- Узгоджений тижневий обсяг становить 13 обов’язкових quadriceps sets, до 15 з optional lower-strength block, і 12 core sets. Розминка `Lower Strength` триває 7–8 хвилин у межах бюджету 0–8 хвилин.
-- Стандартна double progression є детермінованим правилом: одного повністю кваліфікованого виконання достатньо для стандартного кроку. Зміна правила, кількості підходів, вправи чи іншої частини програми потребує щонайменше трьох виконань вправи; trend analysis орієнтується приблизно на 6–8 повторень типу тренування.
-- Джерельна архітектура: [WORKOUT_TRACKER_ARCHITECTURE.md](../WORKOUT_TRACKER_ARCHITECTURE.md). Узгоджені правила: [05 progression and session rules.md](<../4-day upper lower program/05 progression and session rules.md>).
+- Авторитетний корпус уже визначає чотириденну upper/lower програму: `upper_strength`, `lower_strength`, `upper_hypertrophy`, `lower_hypertrophy`, включно з paired-set, reps, RIR, rest, equipment та progression semantics.
+- Exact source labels у Google Sheets є українськими; English aliases використовуються лише всередині коду й контрактів.
+- Google Sheets володіє operational facts, recommendation journal і versioned program prescriptions. Git володіє schemas, normalization, formulas, executable rules, tests і documentation.
+- Raw snapshots, normalized datasets і SQLite — похідні projections, які мають повністю відбудовуватися з авторитетного джерела та версійованих правил.
+- Відомий public-history disclosure підвищує вимоги до repository hygiene: planning, logs і commits не повинні повторювати sensitive values або live identifiers.
+- Product success означає 26/26 вимог, кожна з яких відображена рівно в одну phase і закрита implementation, automated verification та потрібним UAT/restore evidence.
 
 ## Constraints
 
-- **Runtime**: Python 3.12+ local CLI з uv-style dependency management — прийняте рішення користувача.
-- **Validation**: Pydantic має бути межею валідації зовнішніх і нормалізованих даних; невідомі значення залишаються порожніми, а не вигадуються.
-- **Analytical store**: SQLite є локальним queryable store для v1; Google Sheets залишається єдиним джерелом тренувальних фактів.
-- **Testability**: Компоненти й CLI мають бути придатними для pytest-compatible automated verification.
-- **Source schema**: Pull читає фактичні вкладки `Програма`, `Сесії`,
-  `Підходи` і `Рекомендації`; приймаються лише чотири визначені workout types
-  та source-owned `program_item_id`, `session_id`, `set_id` і
-  `recommendation_id`. Internal English identifiers можуть бути aliases, але
-  не замінюють перевірку реальних Sheet labels.
-- **Sheet contracts**: `Програма` зберігає prescription fields; `Сесії` — session identity, context, recovery й summaries; `Підходи` — set facts, load/reps/RIR/rest, volume/e1RM, pain/technique; `Рекомендації` — signal, evidence, confidence і review metadata. Повні field lists залишаються в source architecture.
-- **Identity and history**: Ідентичність визначається stable IDs, а не
-  позицією рядка; factual correction створює revision під тим самим ID,
-  coherent disappearance — tombstone, а кожна нова session посилається на
-  immutable `program_version_id`.
-- **Sync safety**: Raw snapshot незмінний; повторний pull ідемпотентний; primary facts не перезаписуються непомітно.
-- **Storage boundary**: CSV — tabular interchange, JSON — structured exchange, XLSX — повна ручна backup-копія, SQLite — analytics; `.gsheet` не є input або backup.
-- **Privacy**: API keys, OAuth tokens, populated `.env`, персональні raw/processed exports, caches і backups не потрапляють у Git.
-- **Evidence**: Формули, input fingerprint, session/set IDs і джерельний snapshot мають дозволяти відтворити кожен звітний висновок.
-- **Backup**: RPO ≤24 hours; 35 daily + 12 month-end verified backups; дві
-  encrypted copies у різних fault domains; full isolated restore verification
-  щонайменше weekly.
-- **Repository boundaries**: Source-derived layout розділяє `config/`, `src/sync/`, `src/analytics/`, `data/raw/`, `data/processed/`, `data/backups/`, `reports/`, `tests/` і `scripts/`; recommendation code додається лише в post-v1 scope.
-- **Recommendation safety**: v1 не генерує AI program-change recommendations; майбутня логіка мусить відрізняти deterministic progression від аналітичних рекомендацій і дотримуватися evidence thresholds.
-- **Medical safety**: Pain/risk flags не є діагнозом; гострий, сильний або стійкий біль вимагає професійної оцінки.
+- **Primary product**: Google Spreadsheet має залишатися високоякісним standalone daily product навіть без ChatGPT або локального CLI.
+- **Runtime**: Python 3.12+, uv-style dependency management, Pydantic validation boundary, SQLite з foreign keys і transactional staging promotion; authoritative numeric calculations використовують `Decimal` або scaled integers.
+- **Identity**: `program_item_id`, `session_id`, `set_id` і `recommendation_id` є source-owned immutable IDs; row number або content-derived fallback ніколи не є identity.
+- **Authority**: Unknown зберігається як `NULL`; raw source facts, Sheet-calculated values і local-derived values не змішуються; кожна session посилається на `program_version_id`.
+- **Write safety**: Кожен external write потребує preview, explicit confirmation, stable IDs, contract/version preconditions та idempotency; writer має окремі мінімальні credentials і лише allowlisted bundle operations.
+- **Sync safety**: Analytical pull є read-only, захоплює чотири authoritative tabs як version-fenced unit, публікує immutable complete snapshot і атомарно promotes mirror; failure залишає попередній complete mirror active.
+- **Metric safety**: Застосовуються лише `docs/architecture/METRICS.md` і pinned versions; missing/incomparable input дає status та `NULL`, а warm-up/invalid/aborted sets не входять до working volume.
+- **Privacy**: Credentials, live Sheet locators, personal exports, SQLite, reports, logs і backups не потрапляють у Git; model egress обмежений minimum user-authorized context.
+- **Language**: Human-facing documentation і точні Sheet labels — українською; identifiers, schema keys, requirement IDs і technology names — англійською.
+- **Change control**: Зміна accepted authority/runtime/product boundary потребує ADR та синхронного оновлення PROJECT, REQUIREMENTS, roadmap traceability, contracts і tests.
 
 ## Key Decisions
 
-Ingest не містив ADR. Наведені нижче записи є project decisions із provenance, а не `LOCKED` рішеннями; source-derived baseline може переглядатися через звичайний decision workflow. Позначка `Pending` означає, що рішення прийняте для планування, але його результат ще має бути перевірений виконанням.
-
-| Decision | Rationale and provenance | Outcome |
-|----------|--------------------------|---------|
-| Використовувати Python 3.12+ local CLI, uv-style dependencies, Pydantic і pytest-compatible design | Пряме рішення користувача від 2026-07-24 | ✓ Accepted |
-| Використовувати SQLite як v1 analytical store | Пряме рішення користувача; уточнює відкритий вибір local store у `WORKOUT_TRACKER_ARCHITECTURE.md` §9 | ✓ Accepted |
-| Google Sheets володіє operational facts і versioned program prescriptions; Git володіє schemas, formulas і executable rules | [ADR-001](../docs/architecture/ADR-001-authority-boundaries.md) усуває dual-source ambiguity | ✓ Accepted |
-| Залишити Google Sheets єдиним джерелом тренувальних фактів | Source-derived architecture baseline, `WORKOUT_TRACKER_ARCHITECTURE.md` §§2–3 | — Pending validation in Phase 2 |
-| Обмежити v1 напрямком pull → validate → analyze → report, без автоматичної mutation primary facts | Source-derived sync contract і delivery sequence, `WORKOUT_TRACKER_ARCHITECTURE.md` §§8, 13–15 | — Pending validation in Phases 2–4 |
-| Зберігати чіткі module/data boundaries між sync, analytics, raw, processed, backups, reports і tests | Source-derived repository layout, `WORKOUT_TRACKER_ARCHITECTURE.md` §6; конкретні Python package names залишаються implementation choice | — Pending validation during phase planning |
-| Відкласти workout capture/write-back і recommendation engine до v2 | Basic metrics мають бути перевірені раніше за automated recommendations, `WORKOUT_TRACKER_ARCHITECTURE.md` §§10–13 | ✓ Accepted for v1 scope |
-| Вимагати evidence lineage для кожного висновку | User-supplied developer-facing success metric від 2026-07-24 і `WORKOUT_TRACKER_ARCHITECTURE.md` §§11, 15 | — Pending validation in Phase 4 |
-| Вважати backup готовим лише після isolated restore verification | Source-derived backup policy, `WORKOUT_TRACKER_ARCHITECTURE.md` §12 | — Pending validation in Phase 5 |
-| Не вважати privacy requirement виконаною до disposition already-published public history | Security audit 2026-07-24; current-file cleanup не видаляє remote history | — External owner action required |
+| Decision | Rationale | Outcome |
+|----------|-----------|---------|
+| **ADR-001 LOCKED:** Google Sheets володіє operational facts і versioned prescriptions; Git — contracts/rules/tests/docs; local stores є rebuildable projections. | Запобігає розходженню джерел правди та втраті provenance. | LOCKED |
+| **ADR-002 LOCKED:** Локальний контур — Python 3.12+, uv-style dependencies, Pydantic і SQLite з transactional staging promotion. | Дає перевірюваний, portable та rebuildable analytical runtime без server database. | LOCKED |
+| **ADR-003 LOCKED:** Spreadsheet-first product із контрольованим ChatGPT write path, окремими credentials, preview/confirmation та idempotency. | Зберігає standalone UX Spreadsheet і мінімізує blast radius зовнішнього запису. | LOCKED |
 
 ## Evolution
 
-Цей документ змінюється на межах фаз і milestones.
-
-**Після переходу між фазами**:
-1. Невалідні вимоги переносяться до Out of Scope з причиною.
-2. Перевірені вимоги переходять до Validated із посиланням на фазу.
-3. Нові вимоги додаються до Active.
-4. Нові рішення фіксуються в Key Decisions.
-5. Опис продукту оновлюється, якщо фактичний продукт змінився.
-
-**Після кожного milestone**:
-1. Перевіряються всі розділи.
-2. Повторно оцінюється Core Value.
-3. Переглядаються межі Out of Scope.
-4. Context оновлюється фактичними результатами.
+Після кожної phase цей документ переглядається: verified requirements переходять у Validated лише після automated verification і потрібного UAT; нові scope/authority рішення потребують traceability update, а зміни locked boundaries — нового ADR.
 
 ---
-*Last updated: 2026-07-24 after ingest-based initialization*
+*Останнє оновлення: 2026-07-25 після document-ingest rebaseline*

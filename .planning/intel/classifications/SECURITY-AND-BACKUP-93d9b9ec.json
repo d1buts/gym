@@ -1,0 +1,24 @@
+{
+  "source_path": "/home/muuser/bushuk-labs/gym/docs/architecture/SECURITY_AND_BACKUP.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "Безпека, приватність і резервне відновлення",
+  "summary": "Контракт визначає захист даних, межі авторизації, контрольований запис, резервне копіювання та перевірене ізольоване відновлення workout tracker.",
+  "scope": [
+    "Google Spreadsheet",
+    "ChatGPT tool adapter",
+    "Google Sheets authorization",
+    "controlled writer",
+    "local analytics",
+    "Git history",
+    "encrypted backups",
+    "isolated restore verification"
+  ],
+  "cross_refs": [
+    "../specs/SPEC-CHATGPT-WORKOUT-CAPTURE.md"
+  ],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

@@ -4,14 +4,13 @@
   "confidence": "high",
   "manifest_override": true,
   "title": "Exercise reference by category",
-  "summary": "Reference catalog of confirmed gym equipment and categorized exercises, with programming suitability, substitutions, limitations, and verification status.",
+  "summary": "Reference catalog of verified gym equipment and categorized exercises, with roles, loading guidance, substitutions, limitations, and verification status.",
   "scope": [
     "gym equipment",
-    "exercise categories",
-    "strength training",
-    "hypertrophy training",
-    "conditioning",
-    "exercise selection matrix"
+    "exercise catalog",
+    "movement categories",
+    "exercise selection",
+    "verification status"
   ],
   "cross_refs": [
     "./gym%20equipment%20list.md"

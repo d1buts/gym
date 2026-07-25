@@ -4,16 +4,15 @@
   "confidence": "high",
   "manifest_override": true,
   "title": "Progression and Session Rules",
-  "summary": "Specifies deterministic load-progression gates, evidence thresholds for rule-changing recommendations, paired-set exclusions, and 60-minute session prioritization.",
+  "summary": "Визначає детерміновані правила прогресії навантаження, обмеження paired sets, 60-хвилинну структуру тренування та пріоритети скорочення вправ.",
   "scope": [
-    "double progression",
-    "recommendation evidence thresholds",
-    "RIR and technique eligibility",
-    "strength, hypertrophy, and isolation exercises",
+    "детермінована прогресія",
+    "силові вправи",
+    "гіпертрофійні вправи",
+    "ізоляційні вправи",
     "paired sets",
-    "symptom stop criteria",
-    "60-minute session timebox",
-    "block-cut priorities"
+    "60-хвилинна сесія",
+    "пріоритет скорочення"
   ],
   "cross_refs": [],
   "locked": false,

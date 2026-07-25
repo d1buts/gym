@@ -1,128 +1,107 @@
 # Requirements: Workout Tracker
 
-**Defined:** 2026-07-24
-
-**Core Value:** Одна повторювана CLI-команда перетворює всі авторитетні факти з Google Sheets на валідовані, ідемпотентні локальні дані та відтворюваний звіт із простежуваними доказами.
-
-## Classification Boundary
-
-Нижче як v1 requirements наведено лише атомарні, перевірні можливості, які може спостерігати користувач. Runtime, library choices, schema details, privacy rules, evidence thresholds і medical boundaries залишаються technical/domain constraints у `PROJECT.md`; вони не підміняють product requirements. Вимоги виведено з source architecture та version-one quality bar, оскільки ingest-корпус містив 0 `PRD`.
+**Defined:** 2026-07-25
+**Core Value:** Повний цикл «план → тренування → capture → verification → analysis → recommendation → explicit user decision» працює без прихованої ручної обробки, а кожен результат можна простежити до авторитетних фактів і версійованих правил.
 
 ## v1 Requirements
 
-### Source Connection and Validation
+### Workbook
 
-- [ ] **SRC-01**: Користувач може через локальну конфігурацію під’єднати цільовий Google Sheet і перевірити доступ до нього.
-- [ ] **SRC-02**: Користувач може до імпорту перевірити наявність вкладок
-  `Програма`, `Сесії`, `Підходи` і `Рекомендації`, їхні headers, field types,
-  units, stable IDs та program-version links.
-- [ ] **SRC-03**: Користувач отримує validation error, якщо program або session data містять workout type поза `Верх — сила`, `Низ — сила`, `Верх — гіпертрофія` і `Низ — гіпертрофія`.
-- [ ] **SRC-04**: Користувач бачить row-level причину для invalid або critical missing data, а невідомі значення залишаються порожніми й не вигадуються.
+- [ ] **REQ-WBK-01**: Workbook має рівно сім вкладок: `Старт`, `Програма`, `Сесії`, `Підходи`, `Рекомендації`, `Довідники`, `Дашборд`.
+- [ ] **REQ-WBK-02**: `Програма` містить чотири версійовані комплекси з repository specifications без втрати paired-set, reps, RIR, rest і equipment semantics.
+- [ ] **REQ-WBK-03**: Input fields мають validation, hints, formats і mobile-friendly порядок, а formula/system columns захищені.
+- [ ] **REQ-WBK-04**: Formulas і dashboard показують лише визначені metric contracts та явно відображають missing/incomparable status замість вигаданого zero.
+- [ ] **REQ-WBK-05**: Повторний setup не дублює tabs, formulas, named ranges або program items і не змінює logical content.
 
-### Idempotent Synchronization
+### ChatGPT Capture
 
-- [ ] **SYNC-01**: Користувач може виконати pull authoritative tabs `Програма`, `Сесії`, `Підходи` і `Рекомендації` та отримати immutable raw snapshot із timestamp і source fingerprint.
-- [ ] **SYNC-02**: Користувач отримує в SQLite normalized current projection
-  та immutable revision history для program items, sessions, sets і
-  recommendations зі збереженими foreign-key relationships.
-- [ ] **SYNC-03**: Користувач може повторити pull незміненого, відсортованого або переміщеного Sheet без дублювання sessions, sets чи інших логічних записів.
-- [ ] **SYNC-04**: Після кожного pull користувач отримує audit summary із snapshot ID, accepted/rejected counts, inserts/updates і validation failures.
-- [ ] **SYNC-05**: Користувач може виконувати v1 pull і локальну обробку без зміни primary workout facts у Google Sheets.
+- [ ] **REQ-CAP-01**: Користувач може описати виконане тренування природною мовою та отримати session/set preview.
+- [ ] **REQ-CAP-02**: Система запитує критичні уточнення або зберігає дозволене unknown як `NULL`; invalid critical omissions fail closed.
+- [ ] **REQ-CAP-03**: До запису користувач бачить normalized preview сесії, підходів і warnings та може виправити неоднозначні поля.
+- [ ] **REQ-CAP-04**: `commit_workout` працює лише після explicit confirmation і додає valid session/set bundle атомарно.
+- [ ] **REQ-CAP-05**: Stable IDs та idempotency key повертають той самий result без duplicate rows під час repeat, timeout або retry.
+- [ ] **REQ-CAP-06**: Writer не має arbitrary cell/range mutation, приймає лише allowlisted fields і відхиляє неallowlisted operation до mutation.
 
-### History and Metrics
+### Reading and Analytics
 
-- [ ] **HIST-01**: Користувач може запитати історію sessions за workout type і date range.
-- [ ] **HIST-02**: Користувач може запитати історію конкретної exercise з пов’язаними session та set facts.
-- [ ] **METR-01**: Користувач може розрахувати training volume за session, exercise, muscle group і time window.
-- [ ] **METR-02**: Користувач може переглянути maximum working load та e1RM progression із явно визначеною formula.
-- [ ] **METR-03**: Користувач може переглянути RIR і rest summaries та trends для вибраної exercise або workout type.
-- [ ] **METR-04**: Користувач може зіставити performance trends із наявними sleep, energy, stress, soreness і subjective performance data та бачить, де цих даних бракує.
+- [ ] **REQ-ANL-01**: Користувач може фільтрувати історію одночасно за workout type, exercise, program version і date range.
+- [ ] **REQ-ANL-02**: Working volume, load, e1RM, RIR, rest і recovery summaries відтворюються з pinned formula/ruleset versions.
+- [ ] **REQ-ANL-03**: Variant, equipment, load basis, assistance semantics і comparison cohort перевіряються до порівняння, а exclusions пояснюються status.
+- [ ] **REQ-ANL-04**: Кожен analytical result містить formula/ruleset version, status і evidence locator до source-owned IDs без raw sensitive payload.
+- [ ] **REQ-ANL-05**: Dashboard і ChatGPT query tools повертають семантично однакові values/status для однакових eligible inputs і versions.
 
-### Reproducible Evidence Report
+### Recommendations
 
-- [ ] **RPRT-01**: Користувач може однією documented top-level CLI-командою виконати validated pull, оновити локальні дані й створити progress report без ручного копіювання.
-- [ ] **RPRT-02**: Користувач отримує report із session count, volume, maximum load, e1RM, RIR, rest і recovery trends для вибраного періоду або scope.
-- [ ] **RPRT-03**: Повторний запуск із тим самим input snapshot, parameters, config і formula version дає той самий substantive report.
-- [ ] **RPRT-04**: Користувач може для кожної report metric або conclusion простежити raw snapshot, source tab, session/set IDs, parameters і calculation evidence.
+- [ ] **REQ-REC-01**: Deterministic progression result візуально й структурно відокремлений від AI-generated recommendation.
+- [ ] **REQ-REC-02**: Recommendation містить `recommendation_id`, created time, evidence window, rationale, confidence/limitations і status.
+- [ ] **REQ-REC-03**: Недостатні або непорівнювані дані повертають `insufficient_evidence` або відмову, а не вигадану пораду.
+- [ ] **REQ-REC-04**: Recommendation не змінює prescription без explicit owner approval та нової `program_version_id`.
+- [ ] **REQ-REC-05**: Recovery output є descriptive, не ставить diagnosis, не робить causal medical conclusion і routes acute/severe/persistent symptoms до qualified professional.
 
-### Privacy, Backup, and Restore
+### Privacy, Audit and Recovery
 
-- [ ] **PRIV-01**: Користувач може запустити repository safety check для index
-  і full history, довести відсутність нових secrets/personal artifacts та
-  отримати явний failure, доки known public-history disclosure не має
-  owner-approved disposition; `.gsheet` не приймається як analytics input
-  або durable backup.
-- [ ] **BKUP-01**: Користувач може створити timestamped portable backup усіх authoritative tabs із manifest та integrity metadata, окремо від working cache.
-- [ ] **BKUP-02**: Користувач може відновити backup в isolated location, перебудувати queryable local data й отримати доказ відповідності очікуваних tabs, stable IDs, row counts та integrity checks.
+- [ ] **REQ-SAFE-01**: Secrets, live Sheet locator, personal exports, SQLite, reports, logs і backups не потрапляють у Git або generated documentation.
+- [ ] **REQ-SAFE-02**: Successful і failed writes створюють redacted audit з IDs, actor/tool version, timestamps, hashes і outcome без raw notes або зайвих health fields.
+- [ ] **REQ-SAFE-03**: Pull створює coherent immutable snapshots, а atomic mirror promotion залишає попередній complete mirror active після failure або partial capture.
+- [ ] **REQ-SAFE-04**: Portable backup і verified isolated restore відновлюють workbook data, program versions та local analytical state з matching manifest counts/hashes.
+- [ ] **REQ-SAFE-05**: До моделі передається лише minimum user-authorized context для конкретного capture або analysis request без bulk history, credentials, locators чи unrelated health context.
 
 ## v2 Requirements
 
-Deferred capabilities не входять до поточного roadmap.
-
-### Workout Capture and Controlled Write-Back
-
-- **CAPT-01**: Користувач може передати workout через ChatGPT або phone workflow, отримати перевірку одного з чотирьох workout types і уточнення critical missing values.
-- **CAPT-02**: Користувач може одним підтвердженим записом створити stable session ID, одну session row і відповідні set rows без вигаданих даних.
-- **WBCK-01**: Користувач може явно записати назад лише new recommendation rows, predefined calculated fields і optional last-sync status.
-
-### Recommendation Engine
-
-- **RECO-01**: Користувач може отримати deterministic double-progression step після одного повністю qualifying performance з target RIR, stable technique і без збільшення pain.
-- **RECO-02**: Користувач отримує analytical program-change recommendation лише після щонайменше трьох exercise performances, а trend conclusion — приблизно після 6–8 occurrences відповідного workout type.
-- **RECO-03**: Користувач бачить для кожної substantive recommendation signal, concrete evidence, confidence, review date і результат наступної перевірки.
-- **RECO-04**: Користувач отримує пропозицію додати sets лише за stable recovery і доброї переносимості поточного volume.
-
-### Advanced Coach and Interfaces
-
-- **COACH-01**: Користувач може отримати evidence-backed long-term analysis, next-load forecast, plateau та accumulated-fatigue signals.
-- **COACH-02**: Користувач може отримати пояснену пропозицію exercise substitution або next-session plan на основі підтвердженого обладнання й історії.
-- **INTF-01**: Користувач може працювати через окремий Telegram bot, mobile app, web interface, voice input або wearable integration.
-- **PLAT-01**: Після появи multiple users, authentication або складнішого API система може мігрувати primary store до PostgreSQL чи Supabase, зберігши Google Sheets як administrative або backup access channel.
+Немає затверджених v2 вимог. Новий scope додається лише через окреме рішення та roadmap update.
 
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
-| Silent або bulk automatic mutation primary workout records | Суперечить authoritative-data policy; навіть майбутній write-back потребує дозволеного scope й explicit confirmation. |
-| Заміна Google Sheets як authoritative store у v1 | PostgreSQL/Supabase migration відкладена до появи multiple users, authentication або складнішого API. |
-| Медичний діагноз, призначення лікування, dosage advice для ліків або nutrition advice при виражених симптомах | Потребує кваліфікованого medical professional, а risk flags не є діагнозом. |
-| `.gsheet` як analytics input або durable backup | Це посилання на online document, а не повна diffable data copy. |
-| Зберігання API keys, OAuth tokens, populated `.env` чи персональних exports/backups у Git | Порушує secret and privacy boundary навіть у private repository. |
-| Автоматичне перетворення paired-set програми на full circuit | Systemic/cardiorespiratory fatigue може стати лімітом для heavy sets; current program rules це виключають. |
-| Exercise або program advice, що припускає непідтверджене обладнання | Source catalog навмисно не домислює EZ-bar, landmine, sled, GHD, dedicated leg machines, dip bars, rings, bands або ankle cuff. |
+| Multi-user та role management | Milestone призначений для одного власника. |
+| Wearables та сторонні fitness imports | Не потрібні для core cycle і збільшують privacy scope. |
+| Arbitrary Sheet editing | Writer обмежений versioned allowlisted bundle tools. |
+| Automatic program changes | Google Sheets program owner має explicitly approve нову version. |
+| Server database | Локальний SQLite достатній як rebuildable projection. |
+| Medical diagnosis або treatment advice | Recovery analysis у v1 лише descriptive. |
+
+## Acceptance and Completion
+
+Requirement стає Complete лише коли implementation, automated verification та відповідний UAT/restore evidence пройшли. Основні end-to-end gates: UAT-01 workbook/setup; UAT-02 preview/idempotency; UAT-03 confirmed atomic write; UAT-04 metrics/cohorts/provenance; UAT-05 recommendations/owner decision; UAT-06 backup/isolated restore.
 
 ## Traceability
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SRC-01 | Phase 1 | Pending |
-| SRC-02 | Phase 1 | Pending |
-| SRC-03 | Phase 1 | Pending |
-| SRC-04 | Phase 1 | Pending |
-| SYNC-01 | Phase 2 | Pending |
-| SYNC-02 | Phase 2 | Pending |
-| SYNC-03 | Phase 2 | Pending |
-| SYNC-04 | Phase 2 | Pending |
-| SYNC-05 | Phase 2 | Pending |
-| HIST-01 | Phase 3 | Pending |
-| HIST-02 | Phase 3 | Pending |
-| METR-01 | Phase 3 | Pending |
-| METR-02 | Phase 3 | Pending |
-| METR-03 | Phase 3 | Pending |
-| METR-04 | Phase 3 | Pending |
-| RPRT-01 | Phase 4 | Pending |
-| RPRT-02 | Phase 4 | Pending |
-| RPRT-03 | Phase 4 | Pending |
-| RPRT-04 | Phase 4 | Pending |
-| PRIV-01 | Phase 5 | Pending |
-| BKUP-01 | Phase 5 | Pending |
-| BKUP-02 | Phase 5 | Pending |
+| REQ-WBK-01 | Phase 1 | Pending |
+| REQ-WBK-02 | Phase 1 | Pending |
+| REQ-WBK-03 | Phase 1 | Pending |
+| REQ-WBK-04 | Phase 1 | Pending |
+| REQ-WBK-05 | Phase 1 | Pending |
+| REQ-CAP-01 | Phase 2 | Pending |
+| REQ-CAP-02 | Phase 2 | Pending |
+| REQ-CAP-03 | Phase 2 | Pending |
+| REQ-CAP-04 | Phase 2 | Pending |
+| REQ-CAP-05 | Phase 2 | Pending |
+| REQ-CAP-06 | Phase 2 | Pending |
+| REQ-SAFE-02 | Phase 2 | Pending |
+| REQ-SAFE-05 | Phase 2 | Pending |
+| REQ-ANL-01 | Phase 3 | Pending |
+| REQ-ANL-02 | Phase 3 | Pending |
+| REQ-ANL-03 | Phase 3 | Pending |
+| REQ-ANL-04 | Phase 3 | Pending |
+| REQ-ANL-05 | Phase 3 | Pending |
+| REQ-SAFE-03 | Phase 3 | Pending |
+| REQ-REC-01 | Phase 4 | Pending |
+| REQ-REC-02 | Phase 4 | Pending |
+| REQ-REC-03 | Phase 4 | Pending |
+| REQ-REC-04 | Phase 4 | Pending |
+| REQ-REC-05 | Phase 4 | Pending |
+| REQ-SAFE-01 | Phase 5 | Pending |
+| REQ-SAFE-04 | Phase 5 | Pending |
 
 **Coverage:**
-- v1 requirements: 22 total
-- Mapped to phases: 22
+- v1 requirements: 26 total
+- Mapped to phases: 26
 - Unmapped: 0 ✓
+- Duplicate mappings: 0 ✓
 
 ---
-*Requirements defined: 2026-07-24*
-*Last updated: 2026-07-24 after roadmap traceability mapping*
+*Requirements defined: 2026-07-25*
+*Last updated: 2026-07-25 after document-ingest rebaseline*

@@ -4,13 +4,13 @@
   "confidence": "high",
   "manifest_override": true,
   "title": "Four-Day Upper/Lower Training Program",
-  "summary": "Describes a four-day upper/lower hypertrophy and strength program using paired sets, including weekly scheduling, notation, volume targets, and supporting materials.",
+  "summary": "Описує чотириденну програму верх/низ, формат paired sets, тижневий розклад, позначення та орієнтовний тренувальний обсяг.",
   "scope": [
     "four-day upper/lower training program",
     "paired sets",
-    "weekly training schedule",
-    "RIR notation",
-    "weekly muscle-group volume"
+    "weekly schedule",
+    "training notation",
+    "weekly training volume"
   ],
   "cross_refs": [
     "./01%20upper%20strength.md",

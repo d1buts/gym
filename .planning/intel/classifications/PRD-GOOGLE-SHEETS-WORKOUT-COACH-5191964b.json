@@ -1,0 +1,22 @@
+{
+  "source_path": "/home/muuser/bushuk-labs/gym/docs/prd/PRD-GOOGLE-SHEETS-WORKOUT-COACH.md",
+  "type": "PRD",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "PRD: Google Sheets Workout Coach",
+  "summary": "Визначає продуктові вимоги, acceptance journeys і межі першого milestone для spreadsheet-first трекера тренувань з контрольованим ChatGPT capture та evidence-backed analytics.",
+  "scope": [
+    "Google Spreadsheet workbook",
+    "workout program",
+    "ChatGPT capture",
+    "analytics",
+    "recommendations",
+    "privacy",
+    "audit",
+    "backup and restore"
+  ],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}
