@@ -53,6 +53,9 @@ capture, локальний mirror і recommendations належать наст�
   перевіряються тими самими canonical fixtures, що й локальна metric semantics.
 - Program bootstrap бере чотири комплекси з repository specifications,
   детерміновано створює початкові IDs і не змінює вже використану version.
+- Lower Hypertrophy C1 у початковій version є exact
+  `Dumbbell Romanian deadlift`; перехід на barbell variant потребує нової
+  program version і окремого comparison cohort.
 - Clean-workbook та second-run idempotency UAT виконуються на test Spreadsheet;
   production locator і credentials лишаються поза Git.
 
@@ -61,6 +64,10 @@ capture, локальний mirror і recommendations належать наст�
   обираються за project constraints та uv-style tooling.
 - Точні accent colors, column widths і chart geometry можуть бути підібрані під
   accessibility та mobile UAT без зміни domain semantics.
+- Схвалений базовий dependency set: Pydantic, PyYAML,
+  `google-api-python-client`, `google-auth` і pytest через uv із committed
+  lockfile; executor перевіряє package source та pinned resolution перед
+  використанням.
 
 </decisions>
 
