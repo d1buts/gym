@@ -6,7 +6,7 @@ current_phase: 01
 current_phase_name: Standalone Workbook and Four Programs
 status: executing
 stopped_at: Completed 01-01-PLAN.md
-last_updated: "2026-07-30T22:47:30.757Z"
+last_updated: "2026-07-30T22:47:55.277Z"
 last_activity: 2026-07-30
 last_activity_desc: Plan 01-01 completed
 progress:
@@ -56,6 +56,7 @@ Progress: [█░░░░░░░░░] 11%
 
 *Updated after each plan completion*
 | Phase 01 P01 | 28min | 2 tasks | 5 files |
+| Phase 01 P02 | 7min | 1 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -68,6 +69,8 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - ADR-003 LOCKED: Spreadsheet-first product with narrow confirmed idempotent ChatGPT writes.
 - [Phase 01]: D-20 remains the exact five-package direct allowlist. — The approved package set was revalidated against current PyPI metadata and locked without extras.
 - [Phase 01]: google-auth canonical source is googleapis/google-cloud-python/tree/main/packages/google-auth. — The owner approved the upstream migration after the archived repository triggered the fail-closed checkpoint.
+- [Phase 01]: Workbook-managed identity uses namespaced logical keys and rejects positional/provider identity semantics. — Contracts fail closed before gateway access.
+- [Phase 01]: Contract diagnostics expose only stable code, count and contract SHA-256. — Raw YAML, notes, locators, credential paths and tokens stay outside errors.
 
 ### Pending Todos
 
