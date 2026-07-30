@@ -78,6 +78,10 @@ capture, локальний mirror і recommendations належать наст�
   `google-auth`: `googleapis/google-cloud-python/tree/main/packages/google-auth`;
   заархівований `googleapis/google-auth-library-python` більше не є active
   source mapping.
+- Якщо bootstrap specification не задає prescribed rest, система зберігає
+  його як `NULL` і показує explicit unknown status; число не виводиться з
+  сусіднього блоку чи загального прикладу. Зміна nullable contract потребує
+  нового `schema_version`, документації та regression tests.
 - Live test-Spreadsheet UAT використовує local installed-app OAuth із
   мінімальним Sheets scope, untracked token storage та disposable test target;
   service account і production target не є default Phase 1 path.
