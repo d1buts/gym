@@ -89,3 +89,21 @@ def test_only_domain_tabs_link_to_the_authoritative_source_schema() -> None:
         for tab in blueprint.tabs
         if tab.title in {"Старт", "Довідники", "Дашборд"}
     )
+
+
+def test_logical_tab_identity_does_not_use_mutable_provider_coordinates() -> None:
+    from workout_tracker.adapters.port import ObservedTab
+
+    tab = ObservedTab(
+        logical_key="tab:sessions",
+        title="Сесії",
+        owner="workout_tracker",
+        authority_role="training_facts",
+        source_schema_tab="sessions",
+        provider_id="provider-sheet-123",
+        provider_position=42,
+    )
+
+    assert tab.logical_key == "tab:sessions"
+    assert tab.provider_id != tab.logical_key
+    assert str(tab.provider_position) not in tab.logical_key
