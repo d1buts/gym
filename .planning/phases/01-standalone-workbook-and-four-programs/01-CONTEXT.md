@@ -82,6 +82,11 @@ capture, локальний mirror і recommendations належать наст�
   його як `NULL` і показує explicit unknown status; число не виводиться з
   сусіднього блоку чи загального прикладу. Зміна nullable contract потребує
   нового `schema_version`, документації та regression tests.
+- Якщо program source не задає equipment або material setup, відповідні
+  `equipment_id`/`setup_id` і залежний `comparison_cohort_id` залишаються
+  `NULL`; sentinel IDs на кшталт `standard`, `unspecified` чи припущений
+  `bodyweight` заборонені. Фактично виконаний set усе одно має фіксувати
+  реальні variant/equipment/setup для cohort-safe comparison.
 - Live test-Spreadsheet UAT використовує local installed-app OAuth із
   мінімальним Sheets scope, untracked token storage та disposable test target;
   service account і production target не є default Phase 1 path.
