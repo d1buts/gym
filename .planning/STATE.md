@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 01
 current_phase_name: Standalone Workbook and Four Programs
 status: executing
-stopped_at: Phase 1 planning verified; 9 plans ready for execution
-last_updated: "2026-07-30T22:04:54.575Z"
+stopped_at: Completed 01-01-PLAN.md
+last_updated: "2026-07-30T22:37:12.367Z"
 last_activity: 2026-07-30
 last_activity_desc: Phase 01 execution started
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 9
-  completed_plans: 0
+  completed_plans: 1
   percent: 0
 ---
 
@@ -29,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-07-25)
 ## Current Position
 
 Phase: 01 (Standalone Workbook and Four Programs) — EXECUTING
-Plan: 1 of 9
-Status: Executing Phase 01
+Plan: 2 of 9
+Status: Ready to execute
 Last activity: 2026-07-30 — Phase 01 execution started
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [█░░░░░░░░░] 11%
 
 ## Performance Metrics
 
@@ -55,6 +55,7 @@ Progress: [░░░░░░░░░░] 0%
 - Trend: Not enough data
 
 *Updated after each plan completion*
+| Phase 01 P01 | 28min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -65,6 +66,8 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - ADR-001 LOCKED: Sheets/Git/local authority boundaries and source-owned stable identity.
 - ADR-002 LOCKED: Python 3.12+, uv-style dependencies, Pydantic and rebuildable SQLite.
 - ADR-003 LOCKED: Spreadsheet-first product with narrow confirmed idempotent ChatGPT writes.
+- [Phase 01]: D-20 remains the exact five-package direct allowlist. — The approved package set was revalidated against current PyPI metadata and locked without extras.
+- [Phase 01]: google-auth canonical source is googleapis/google-cloud-python/tree/main/packages/google-auth. — The owner approved the upstream migration after the archived repository triggered the fail-closed checkpoint.
 
 ### Pending Todos
 
@@ -83,6 +86,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-30
-Stopped at: Phase 1 planning verified; 9 plans ready for execution
+Last session: 2026-07-30T22:36:36.398Z
+Stopped at: Completed 01-01-PLAN.md
 Resume file: None
