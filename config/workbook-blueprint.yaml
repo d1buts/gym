@@ -1,0 +1,61 @@
+workbook_contract_version: "1.0.0"
+schema_version: "1.0.0"
+formula_version: "metrics-v1"
+program_bootstrap_version: "program-v1.0.0"
+owner: "workout_tracker"
+
+properties:
+  locale: "uk_UA"
+  time_zone: "America/New_York"
+
+formula_registry: []
+
+tabs:
+  - logical_key: "tab:start"
+    title: "Старт"
+    owner: "workout_tracker"
+    authority_role: "user_interface"
+    source_schema_tab: null
+    managed_objects: []
+
+  - logical_key: "tab:program"
+    title: "Програма"
+    owner: "workout_tracker"
+    authority_role: "operational_program_prescriptions"
+    source_schema_tab: "program"
+    managed_objects: []
+
+  - logical_key: "tab:sessions"
+    title: "Сесії"
+    owner: "workout_tracker"
+    authority_role: "training_facts"
+    source_schema_tab: "sessions"
+    managed_objects: []
+
+  - logical_key: "tab:sets"
+    title: "Підходи"
+    owner: "workout_tracker"
+    authority_role: "training_facts"
+    source_schema_tab: "sets"
+    managed_objects: []
+
+  - logical_key: "tab:recommendations"
+    title: "Рекомендації"
+    owner: "workout_tracker"
+    authority_role: "recommendation_journal"
+    source_schema_tab: "recommendations"
+    managed_objects: []
+
+  - logical_key: "tab:lookups"
+    title: "Довідники"
+    owner: "workout_tracker"
+    authority_role: "configuration_projection"
+    source_schema_tab: null
+    managed_objects: []
+
+  - logical_key: "tab:dashboard"
+    title: "Дашборд"
+    owner: "workout_tracker"
+    authority_role: "derived"
+    source_schema_tab: null
+    managed_objects: []
