@@ -19,6 +19,9 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
+pythonpath = [
+    "src",
+]
 testpaths = [
     "tests/unit",
     "tests/contract",
