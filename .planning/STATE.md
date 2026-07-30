@@ -5,16 +5,16 @@ milestone_name: milestone
 current_phase: 01
 current_phase_name: Standalone Workbook and Four Programs
 status: executing
-stopped_at: Completed 01-02-PLAN.md
-last_updated: "2026-07-30T22:48:23.026Z"
+stopped_at: Completed 01-03-PLAN.md
+last_updated: "2026-07-30T22:59:26.957Z"
 last_activity: 2026-07-30
 last_activity_desc: Plan 01-02 completed
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 9
-  completed_plans: 2
-  percent: 22
+  completed_plans: 3
+  percent: 33
 ---
 
 # Project State
@@ -29,34 +29,35 @@ See: .planning/PROJECT.md (updated 2026-07-25)
 ## Current Position
 
 Phase: 01 (Standalone Workbook and Four Programs) — EXECUTING
-Plan: 3 of 9
+Plan: 4 of 9
 Status: Ready to execute
-Last activity: 2026-07-30 — Plan 01-02 completed
+Last activity: 2026-07-30 — Plan 01-03 completed
 
-Progress: [██░░░░░░░░] 22%
+Progress: [███░░░░░░░] 33%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 2
-- Average duration: 18 min
-- Total execution time: 35 min
+- Total plans completed: 3
+- Average duration: 14 min
+- Total execution time: 41 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| Phase 01 | 2 | 35min | 18min |
+| Phase 01 | 3 | 41min | 14min |
 
 **Recent Trend:**
 
-- Last 5 plans: 28min, 7min
+- Last 5 plans: 28min, 7min, 6min
 - Trend: Improving
 
 *Updated after each plan completion*
 | Phase 01 P01 | 28min | 2 tasks | 5 files |
 | Phase 01 P02 | 7min | 1 tasks | 6 files |
+| Phase 01 P03 | 6min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -71,6 +72,8 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 01]: google-auth canonical source is googleapis/google-cloud-python/tree/main/packages/google-auth. — The owner approved the upstream migration after the archived repository triggered the fail-closed checkpoint.
 - [Phase 01]: Workbook-managed identity uses namespaced logical keys and rejects positional/provider identity semantics. — Contracts fail closed before gateway access.
 - [Phase 01]: Contract diagnostics expose only stable code, count and contract SHA-256. — Raw YAML, notes, locators, credential paths and tokens stay outside errors.
+- [Phase 01]: Managed fingerprints exclude provider IDs and positions. — Only stable managed structure plus locale and timezone participate in the canonical hash.
+- [Phase 01]: Default-tab cleanup is an explicit narrow initialization exception. — Removal requires the sole empty unowned tab to be marked as the provider default; arbitrary tabs are preserved.
 
 ### Pending Todos
 
@@ -89,6 +92,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-30T22:48:22.954Z
-Stopped at: Completed 01-02-PLAN.md
+Last session: 2026-07-30T22:59:19.983Z
+Stopped at: Completed 01-03-PLAN.md
 Resume file: None
