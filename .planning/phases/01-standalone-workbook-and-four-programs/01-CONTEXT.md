@@ -74,6 +74,10 @@ capture, локальний mirror і recommendations належать наст�
 - Package-legitimacy checkpoint для цього базового set схвалено користувачем
   відповіддю «на всі запитання — 1»; executor не повинен повторно блокувати
   offline setup, якщо canonical package names/sources не змінилися.
+- Після upstream migration користувач окремо схвалив canonical source для
+  `google-auth`: `googleapis/google-cloud-python/tree/main/packages/google-auth`;
+  заархівований `googleapis/google-auth-library-python` більше не є active
+  source mapping.
 - Live test-Spreadsheet UAT використовує local installed-app OAuth із
   мінімальним Sheets scope, untracked token storage та disposable test target;
   service account і production target не є default Phase 1 path.

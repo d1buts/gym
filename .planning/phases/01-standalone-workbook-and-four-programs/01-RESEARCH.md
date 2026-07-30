@@ -169,11 +169,11 @@ The required legitimacy seam found all packages on PyPI with established source 
 | `pydantic` | PyPI | since 2017 | unavailable | `github.com/pydantic/pydantic` | SUS | Approved by user for canonical source; executor re-checks source/pin |
 | `PyYAML` | PyPI | since 2011 | unavailable | `pyyaml.org` | SUS | Approved by user for canonical source; executor re-checks source/pin |
 | `google-api-python-client` | PyPI | since 2011 | unavailable | `github.com/googleapis/google-api-python-client` | SUS | Approved by user for canonical source; executor re-checks source/pin |
-| `google-auth` | PyPI | since 2016 | unavailable | Google source repository | SUS | Approved by user for canonical source; executor re-checks source/pin |
+| `google-auth` | PyPI | since 2016 | unavailable | `github.com/googleapis/google-cloud-python/tree/main/packages/google-auth` | SUS | Migrated upstream mapping separately approved by user on 2026-07-30; executor re-checks source/pin |
 | `pytest` | PyPI | since 2010 | unavailable | `github.com/pytest-dev/pytest` | SUS | Approved by user for canonical source; executor re-checks source/pin |
 
 **Packages removed due to SLOP verdict:** none.  
-**Packages flagged as suspicious [SUS]:** all five retain their seam verdict for traceability, but the grouped human checkpoint is **RESOLVED** by explicit user approval. Re-open the checkpoint only if a package name or canonical source changes; ordinary version resolution remains executor-verified and locked in `uv.lock`. [VERIFIED: updated `01-CONTEXT.md`]
+**Packages flagged as suspicious [SUS]:** all five retain their seam verdict for traceability, but the grouped human checkpoint is **RESOLVED** by explicit user approval. The later `google-auth` migration from the archived `google-auth-library-python` repository to `google-cloud-python/tree/main/packages/google-auth` was re-opened by the executor and separately approved by the user on 2026-07-30. Re-open the checkpoint only if a package name or canonical source changes again; ordinary version resolution remains executor-verified and locked in `uv.lock`. [VERIFIED: updated `01-CONTEXT.md`]
 
 ## Architecture Patterns
 
