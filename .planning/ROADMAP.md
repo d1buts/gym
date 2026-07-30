@@ -26,10 +26,10 @@ Milestone спочатку робить Google Spreadsheet корисним са
   3. Formulas і dashboard показують лише contract-defined metrics; missing або incomparable input видно як explicit status і `NULL`, а не zero.
   4. Повторний setup не створює duplicate tabs, named ranges, formulas чи program items і не змінює logical workbook content.
 
-**Plans**: 1/9 plans executed
+**Plans**: 2/9 plans executed
 
 - [x] 01-01-PLAN.md
-- [ ] 01-02-PLAN.md
+- [x] 01-02-PLAN.md
 - [ ] 01-03-PLAN.md
 - [ ] 01-04-PLAN.md
 - [ ] 01-05-PLAN.md
