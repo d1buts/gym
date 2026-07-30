@@ -5,16 +5,16 @@ milestone_name: milestone
 current_phase: 01
 current_phase_name: Standalone Workbook and Four Programs
 status: executing
-stopped_at: Completed 01-05-PLAN.md
-last_updated: "2026-07-30T23:39:28.281Z"
+stopped_at: Completed 01-06-PLAN.md
+last_updated: "2026-07-30T23:52:04.429Z"
 last_activity: 2026-07-30
 last_activity_desc: Plan 01-05 completed
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 9
-  completed_plans: 5
-  percent: 56
+  completed_plans: 6
+  percent: 0
 ---
 
 # Project State
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-07-25)
 ## Current Position
 
 Phase: 01 (Standalone Workbook and Four Programs) — EXECUTING
-Plan: 6 of 9
+Plan: 7 of 9
 Status: Ready to execute
 Last activity: 2026-07-30 — Plan 01-05 completed
 
@@ -60,6 +60,7 @@ Progress: [██████░░░░] 56%
 | Phase 01 P03 | 6min | 2 tasks | 5 files |
 | Phase 01 P04 | 10 min | 1 tasks | 10 files |
 | Phase 01 P05 | 13min | 2 tasks | 7 files |
+| Phase 01 P06 | 9min | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -82,6 +83,9 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 01]: Manual input is input-first while primary IDs, version metadata, timestamps and formula caches remain enforced protected.
 - [Phase 01]: DesiredWorkbook contains deterministic logical reserve slots and capacity only; UUID allocation remains outside pure compilation.
 - [Phase 01]: Set activation requires an existing session_id with an exact matching program_version_id.
+- [Phase 01]: Formula templates remain solely in FormulaRegistry; the workbook blueprint stores only stable formula ID and version references. — Prevents source text from entering executable formula construction.
+- [Phase 01]: A nullable program cohort never authorizes metric comparison; performed metrics require complete material cohort dimensions. — Missing variant, equipment, setup, load basis or cohort must fail closed as incomparable.
+- [Phase 01]: Dashboard order is cards, filters, cohort-safe trends and quality statuses; charts preserve NULL gaps. — Unavailable data remains visible and incompatible series are never merged.
 
 ### Pending Todos
 
@@ -100,6 +104,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-30T23:39:28.275Z
-Stopped at: Completed 01-05-PLAN.md
+Last session: 2026-07-30T23:52:04.426Z
+Stopped at: Completed 01-06-PLAN.md
 Resume file: None
