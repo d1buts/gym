@@ -10,6 +10,608 @@ properties:
 
 formula_registry: []
 
+presentation:
+  palette:
+    background: "#FFFFFF"
+    surface: "#F8FAFC"
+    text: "#111827"
+    muted_text: "#475569"
+    input_fill: "#FFF7D6"
+    system_fill: "#E2E8F0"
+    border: "#64748B"
+    error_fill: "#FEE2E2"
+    warning_fill: "#FEF3C7"
+    success_fill: "#DCFCE7"
+    workout_accents:
+      - internal_alias: "upper_strength"
+        label: "Верх — сила"
+        color: "#1D4ED8"
+        symbol: "◆"
+      - internal_alias: "lower_strength"
+        label: "Низ — сила"
+        color: "#047857"
+        symbol: "●"
+      - internal_alias: "upper_hypertrophy"
+        label: "Верх — гіпертрофія"
+        color: "#7E22CE"
+        symbol: "▲"
+      - internal_alias: "lower_hypertrophy"
+        label: "Низ — гіпертрофія"
+        color: "#C2410C"
+        symbol: "■"
+  start:
+    primary_action_columns: ["A", "B"]
+    decorative_merged_cells: false
+    shows:
+      - "next_complex"
+      - "last_completed_session"
+      - "complex_links"
+      - "manual_guidance"
+      - "sync_backup_status"
+    next_complex_label: "Наступний комплекс"
+    last_session_label: "Остання завершена сесія"
+    manual_guidance:
+      - "1. Активуйте рядок у «Сесії»: дата, комплекс і статус."
+      - "2. Додайте підходи лише до активної сесії."
+      - "3. Порожнє дозволене значення означає «немає даних», не нуль."
+      - "Через ChatGPT: перегляньте preview і явно підтвердьте запис."
+    complex_links:
+      - internal_alias: "upper_strength"
+        label: "Верх — сила"
+        symbol: "◆"
+        target_filter_view: "filter_view:program:upper_strength"
+        tap_count: 1
+      - internal_alias: "lower_strength"
+        label: "Низ — сила"
+        symbol: "●"
+        target_filter_view: "filter_view:program:lower_strength"
+        tap_count: 1
+      - internal_alias: "upper_hypertrophy"
+        label: "Верх — гіпертрофія"
+        symbol: "▲"
+        target_filter_view: "filter_view:program:upper_hypertrophy"
+        tap_count: 1
+      - internal_alias: "lower_hypertrophy"
+        label: "Низ — гіпертрофія"
+        symbol: "■"
+        target_filter_view: "filter_view:program:lower_hypertrophy"
+        tap_count: 1
+    redacted_status:
+      label: "Стан синхронізації та резервної копії"
+      allowed_fields:
+        - "status_code"
+        - "contract_version"
+        - "record_count"
+      forbidden_fields:
+        - "sheet_locator"
+        - "credential_path"
+        - "notes"
+        - "health_context"
+  status_styles:
+    - code: "missing_required"
+      label: "Обов'язкове поле відсутнє"
+      symbol: "⚠"
+      foreground: "#991B1B"
+      background: "#FEE2E2"
+      display_value: null
+    - code: "invalid_bundle"
+      label: "Невалідний пакет"
+      symbol: "✕"
+      foreground: "#991B1B"
+      background: "#FEE2E2"
+      display_value: null
+    - code: "duplicate_id"
+      label: "Дублікат ID"
+      symbol: "✕"
+      foreground: "#991B1B"
+      background: "#FEE2E2"
+      display_value: null
+    - code: "pending_recommendation"
+      label: "Очікує рішення"
+      symbol: "●"
+      foreground: "#92400E"
+      background: "#FEF3C7"
+      display_value: null
+    - code: "nullable_missing"
+      label: "Немає даних"
+      symbol: "—"
+      foreground: "#475569"
+      background: "#F8FAFC"
+      display_value: null
+
+validation_policy:
+  schema_derived: true
+  strict_reject: true
+  nullable_blank_is_null: true
+  invalid_value_is_zero: false
+  help_text_locale: "uk-UA"
+  filtered_rows_included: true
+  date_format: "yyyy-mm-dd"
+  datetime_format: "yyyy-mm-dd hh:mm"
+  decimal_format: "0.00"
+  integer_format: "0"
+  required_help_text: "Обов'язкове поле. Введіть значення за підказкою."
+  nullable_help_text: "Не знаєте значення — залиште клітинку порожньою."
+  enum_help_text: "Виберіть одне значення зі списку."
+  invalid_help_text: "Значення не відповідає контракту даних."
+
+quality_diagnostics:
+  source_ref: "schema.conditional_rules"
+  missing_nullable_value: "nullable_missing"
+  missing_required_value: "missing_required"
+  invalid_bundle: "invalid_bundle"
+  duplicate_id: "duplicate_id"
+  write_zero_for_missing: false
+
+named_ranges:
+  - logical_key: "named_range:workout_types"
+    name: "wt_workout_types"
+    source_kind: "schema_workout_types"
+    source_ref: "canonical_workout_types.*.source_label"
+    operational_only: false
+  - logical_key: "named_range:program_version_status"
+    name: "wt_program_version_status"
+    source_kind: "schema_enum"
+    source_ref: "enums.program_version_status"
+    operational_only: false
+  - logical_key: "named_range:program_item_status"
+    name: "wt_program_item_status"
+    source_kind: "schema_enum"
+    source_ref: "enums.program_item_status"
+    operational_only: false
+  - logical_key: "named_range:session_status"
+    name: "wt_session_status"
+    source_kind: "schema_enum"
+    source_ref: "enums.session_status"
+    operational_only: false
+  - logical_key: "named_range:set_status"
+    name: "wt_set_status"
+    source_kind: "schema_enum"
+    source_ref: "enums.set_status"
+    operational_only: false
+  - logical_key: "named_range:set_role"
+    name: "wt_set_role"
+    source_kind: "schema_enum"
+    source_ref: "enums.set_role"
+    operational_only: false
+  - logical_key: "named_range:measurement_kind"
+    name: "wt_measurement_kind"
+    source_kind: "schema_enum"
+    source_ref: "enums.measurement_kind"
+    operational_only: false
+  - logical_key: "named_range:laterality"
+    name: "wt_laterality"
+    source_kind: "schema_enum"
+    source_ref: "enums.laterality"
+    operational_only: false
+  - logical_key: "named_range:load_unit"
+    name: "wt_load_unit"
+    source_kind: "schema_enum"
+    source_ref: "enums.load_unit"
+    operational_only: false
+  - logical_key: "named_range:load_basis"
+    name: "wt_load_basis"
+    source_kind: "schema_enum"
+    source_ref: "enums.load_basis"
+    operational_only: false
+  - logical_key: "named_range:generated_by"
+    name: "wt_generated_by"
+    source_kind: "schema_enum"
+    source_ref: "enums.generated_by"
+    operational_only: false
+  - logical_key: "named_range:recommendation_scope"
+    name: "wt_recommendation_scope"
+    source_kind: "schema_enum"
+    source_ref: "enums.recommendation_scope"
+    operational_only: false
+  - logical_key: "named_range:recommendation_type"
+    name: "wt_recommendation_type"
+    source_kind: "schema_enum"
+    source_ref: "enums.recommendation_type"
+    operational_only: false
+  - logical_key: "named_range:recommendation_status"
+    name: "wt_recommendation_status"
+    source_kind: "schema_enum"
+    source_ref: "enums.recommendation_status"
+    operational_only: false
+  - logical_key: "named_range:recommendation_outcome"
+    name: "wt_recommendation_outcome"
+    source_kind: "schema_enum"
+    source_ref: "enums.recommendation_outcome"
+    operational_only: false
+  - logical_key: "named_range:active_program_versions"
+    name: "wt_active_program_versions"
+    source_kind: "active_records"
+    source_ref: "Програма.program_version_id"
+    status_filter: "program_version_status == 'active'"
+    operational_only: true
+  - logical_key: "named_range:active_program_items"
+    name: "wt_active_program_items"
+    source_kind: "active_records"
+    source_ref: "Програма.program_item_id"
+    status_filter: "status == 'active'"
+    operational_only: true
+  - logical_key: "named_range:active_session_ids"
+    name: "wt_active_session_ids"
+    source_kind: "active_records"
+    source_ref: "Сесії.session_id"
+    status_filter: "status in ['writing', 'complete']"
+    operational_only: true
+
+filter_views:
+  - logical_key: "filter_view:program:upper_strength"
+    tab: "Програма"
+    title: "Верх — сила"
+    workout_label: "Верх — сила"
+    source_field: "workout_type"
+  - logical_key: "filter_view:program:lower_strength"
+    tab: "Програма"
+    title: "Низ — сила"
+    workout_label: "Низ — сила"
+    source_field: "workout_type"
+  - logical_key: "filter_view:program:upper_hypertrophy"
+    tab: "Програма"
+    title: "Верх — гіпертрофія"
+    workout_label: "Верх — гіпертрофія"
+    source_field: "workout_type"
+  - logical_key: "filter_view:program:lower_hypertrophy"
+    tab: "Програма"
+    title: "Низ — гіпертрофія"
+    workout_label: "Низ — гіпертрофія"
+    source_field: "workout_type"
+
+managed_input_zones:
+  - logical_key: "input_zone:sessions"
+    tab: "Сесії"
+    schema_tab: "sessions"
+    append_only: true
+    reserve_capacity: 128
+    reserve_slot_prefix: "reserve:session:"
+    primary_key: "session_id"
+    freeze_rows: 1
+    decorative_merged_cells: false
+    input_fill: "#FFF7D6"
+    system_fill: "#E2E8F0"
+    editable_columns:
+      - "session_date"
+      - "workout_type"
+      - "status"
+      - "started_at"
+      - "completed_at"
+      - "duration_minutes"
+      - "expected_set_count"
+      - "body_mass_value"
+      - "body_mass_unit"
+      - "sleep_hours"
+      - "energy_score"
+      - "stress_score"
+      - "soreness_score"
+      - "performance_score"
+      - "notes"
+      - "void_reason"
+    protected_columns:
+      - "session_id"
+      - "schema_version"
+      - "source_revision"
+      - "created_at"
+      - "updated_at"
+      - "program_version_id"
+      - "observed_set_count_sheet"
+      - "working_set_count_sheet"
+      - "volume_sheet"
+      - "average_rir_sheet"
+      - "average_rest_seconds_sheet"
+      - "risk_flags_sheet"
+      - "sheet_formula_version"
+    column_order:
+      - "session_date"
+      - "workout_type"
+      - "status"
+      - "started_at"
+      - "completed_at"
+      - "duration_minutes"
+      - "expected_set_count"
+      - "body_mass_value"
+      - "body_mass_unit"
+      - "sleep_hours"
+      - "energy_score"
+      - "stress_score"
+      - "soreness_score"
+      - "performance_score"
+      - "notes"
+      - "void_reason"
+      - "session_id"
+      - "schema_version"
+      - "source_revision"
+      - "created_at"
+      - "updated_at"
+      - "program_version_id"
+      - "observed_set_count_sheet"
+      - "working_set_count_sheet"
+      - "volume_sheet"
+      - "average_rir_sheet"
+      - "average_rest_seconds_sheet"
+      - "risk_flags_sheet"
+      - "sheet_formula_version"
+    activation:
+      active_when: "session_date is present and workout_type is present and status in ['writing', 'complete']"
+      prerequisite_named_range: "named_range:active_program_versions"
+      prerequisite_field: "program_version_id"
+      inactive_rows_are_facts: false
+    protection:
+      enforced: true
+      warning_only: false
+  - logical_key: "input_zone:sets"
+    tab: "Підходи"
+    schema_tab: "sets"
+    append_only: true
+    reserve_capacity: 2048
+    reserve_slot_prefix: "reserve:set:"
+    primary_key: "set_id"
+    freeze_rows: 1
+    decorative_merged_cells: false
+    input_fill: "#FFF7D6"
+    system_fill: "#E2E8F0"
+    editable_columns:
+      - "session_id"
+      - "program_item_id"
+      - "status"
+      - "set_number"
+      - "performed_order"
+      - "set_role"
+      - "prescribed_optional"
+      - "unplanned_reason"
+      - "exercise_family_id"
+      - "exercise_variant_id"
+      - "comparison_cohort_id"
+      - "equipment_id"
+      - "setup_id"
+      - "exercise_name"
+      - "primary_muscle_group_id"
+      - "measurement_kind"
+      - "laterality"
+      - "load_value"
+      - "load_unit"
+      - "load_basis"
+      - "implement_count"
+      - "reps_total"
+      - "reps_left"
+      - "reps_right"
+      - "duration_seconds_total"
+      - "duration_seconds_left"
+      - "duration_seconds_right"
+      - "rir"
+      - "rest_seconds"
+      - "pain_score"
+      - "pain_location"
+      - "technique_score"
+      - "skip_reason"
+      - "void_reason"
+      - "notes"
+    protected_columns:
+      - "set_id"
+      - "schema_version"
+      - "program_version_id"
+      - "source_revision"
+      - "created_at"
+      - "updated_at"
+      - "session_date_sheet"
+      - "workout_type_sheet"
+      - "volume_sheet"
+      - "volume_unit_sheet"
+      - "e1rm_sheet"
+      - "e1rm_unit_sheet"
+      - "sheet_formula_version"
+    column_order:
+      - "session_id"
+      - "program_item_id"
+      - "status"
+      - "set_number"
+      - "performed_order"
+      - "set_role"
+      - "prescribed_optional"
+      - "unplanned_reason"
+      - "exercise_family_id"
+      - "exercise_variant_id"
+      - "comparison_cohort_id"
+      - "equipment_id"
+      - "setup_id"
+      - "exercise_name"
+      - "primary_muscle_group_id"
+      - "measurement_kind"
+      - "laterality"
+      - "load_value"
+      - "load_unit"
+      - "load_basis"
+      - "implement_count"
+      - "reps_total"
+      - "reps_left"
+      - "reps_right"
+      - "duration_seconds_total"
+      - "duration_seconds_left"
+      - "duration_seconds_right"
+      - "rir"
+      - "rest_seconds"
+      - "pain_score"
+      - "pain_location"
+      - "technique_score"
+      - "skip_reason"
+      - "void_reason"
+      - "notes"
+      - "set_id"
+      - "schema_version"
+      - "program_version_id"
+      - "source_revision"
+      - "created_at"
+      - "updated_at"
+      - "session_date_sheet"
+      - "workout_type_sheet"
+      - "volume_sheet"
+      - "volume_unit_sheet"
+      - "e1rm_sheet"
+      - "e1rm_unit_sheet"
+      - "sheet_formula_version"
+    activation:
+      active_when: "session_id is present and status in ['completed', 'partial', 'skipped', 'void']"
+      foreign_key: "session_id"
+      foreign_key_named_range: "named_range:active_session_ids"
+      version_match: "program_version_id == referenced session.program_version_id"
+      program_item_named_range: "named_range:active_program_items"
+      inactive_rows_are_facts: false
+    protection:
+      enforced: true
+      warning_only: false
+
+protections:
+  - logical_key: "protection:sessions:identity_system"
+    tab: "Сесії"
+    fields:
+      - "session_id"
+      - "schema_version"
+      - "source_revision"
+      - "created_at"
+      - "updated_at"
+      - "program_version_id"
+    enforced: true
+    warning_only: false
+  - logical_key: "protection:sessions:formulas"
+    tab: "Сесії"
+    fields:
+      - "observed_set_count_sheet"
+      - "working_set_count_sheet"
+      - "volume_sheet"
+      - "average_rir_sheet"
+      - "average_rest_seconds_sheet"
+      - "risk_flags_sheet"
+      - "sheet_formula_version"
+    enforced: true
+    warning_only: false
+  - logical_key: "protection:sets:identity_system"
+    tab: "Підходи"
+    fields:
+      - "set_id"
+      - "schema_version"
+      - "program_version_id"
+      - "source_revision"
+      - "created_at"
+      - "updated_at"
+    enforced: true
+    warning_only: false
+  - logical_key: "protection:sets:formulas"
+    tab: "Підходи"
+    fields:
+      - "session_date_sheet"
+      - "workout_type_sheet"
+      - "volume_sheet"
+      - "volume_unit_sheet"
+      - "e1rm_sheet"
+      - "e1rm_unit_sheet"
+      - "sheet_formula_version"
+    enforced: true
+    warning_only: false
+
+tab_layouts:
+  - logical_key: "layout:start"
+    tab: "Старт"
+    freeze_rows: 2
+    decorative_merged_cells: false
+    column_widths:
+      - field: "A"
+        pixels: 164
+      - field: "B"
+        pixels: 116
+      - field: "C"
+        pixels: 116
+      - field: "D"
+        pixels: 116
+  - logical_key: "layout:sessions"
+    tab: "Сесії"
+    freeze_rows: 1
+    decorative_merged_cells: false
+    column_widths:
+      - {field: "session_date", pixels: 104}
+      - {field: "workout_type", pixels: 150}
+      - {field: "status", pixels: 112}
+      - {field: "started_at", pixels: 142}
+      - {field: "completed_at", pixels: 142}
+      - {field: "duration_minutes", pixels: 112}
+      - {field: "expected_set_count", pixels: 118}
+      - {field: "body_mass_value", pixels: 100}
+      - {field: "body_mass_unit", pixels: 92}
+      - {field: "sleep_hours", pixels: 92}
+      - {field: "energy_score", pixels: 92}
+      - {field: "stress_score", pixels: 92}
+      - {field: "soreness_score", pixels: 100}
+      - {field: "performance_score", pixels: 112}
+      - {field: "notes", pixels: 220}
+      - {field: "void_reason", pixels: 180}
+      - {field: "session_id", pixels: 154}
+      - {field: "schema_version", pixels: 104}
+      - {field: "source_revision", pixels: 96}
+      - {field: "created_at", pixels: 142}
+      - {field: "updated_at", pixels: 142}
+      - {field: "program_version_id", pixels: 154}
+      - {field: "observed_set_count_sheet", pixels: 118}
+      - {field: "working_set_count_sheet", pixels: 118}
+      - {field: "volume_sheet", pixels: 112}
+      - {field: "average_rir_sheet", pixels: 112}
+      - {field: "average_rest_seconds_sheet", pixels: 128}
+      - {field: "risk_flags_sheet", pixels: 160}
+      - {field: "sheet_formula_version", pixels: 118}
+  - logical_key: "layout:sets"
+    tab: "Підходи"
+    freeze_rows: 1
+    decorative_merged_cells: false
+    column_widths:
+      - {field: "session_id", pixels: 154}
+      - {field: "program_item_id", pixels: 154}
+      - {field: "status", pixels: 112}
+      - {field: "set_number", pixels: 92}
+      - {field: "performed_order", pixels: 104}
+      - {field: "set_role", pixels: 104}
+      - {field: "prescribed_optional", pixels: 112}
+      - {field: "unplanned_reason", pixels: 180}
+      - {field: "exercise_family_id", pixels: 150}
+      - {field: "exercise_variant_id", pixels: 164}
+      - {field: "comparison_cohort_id", pixels: 164}
+      - {field: "equipment_id", pixels: 142}
+      - {field: "setup_id", pixels: 142}
+      - {field: "exercise_name", pixels: 200}
+      - {field: "primary_muscle_group_id", pixels: 154}
+      - {field: "measurement_kind", pixels: 132}
+      - {field: "laterality", pixels: 124}
+      - {field: "load_value", pixels: 104}
+      - {field: "load_unit", pixels: 100}
+      - {field: "load_basis", pixels: 130}
+      - {field: "implement_count", pixels: 104}
+      - {field: "reps_total", pixels: 92}
+      - {field: "reps_left", pixels: 92}
+      - {field: "reps_right", pixels: 92}
+      - {field: "duration_seconds_total", pixels: 118}
+      - {field: "duration_seconds_left", pixels: 118}
+      - {field: "duration_seconds_right", pixels: 118}
+      - {field: "rir", pixels: 76}
+      - {field: "rest_seconds", pixels: 104}
+      - {field: "pain_score", pixels: 92}
+      - {field: "pain_location", pixels: 160}
+      - {field: "technique_score", pixels: 96}
+      - {field: "skip_reason", pixels: 180}
+      - {field: "void_reason", pixels: 180}
+      - {field: "notes", pixels: 220}
+      - {field: "set_id", pixels: 154}
+      - {field: "schema_version", pixels: 104}
+      - {field: "program_version_id", pixels: 154}
+      - {field: "source_revision", pixels: 96}
+      - {field: "created_at", pixels: 142}
+      - {field: "updated_at", pixels: 142}
+      - {field: "session_date_sheet", pixels: 112}
+      - {field: "workout_type_sheet", pixels: 150}
+      - {field: "volume_sheet", pixels: 112}
+      - {field: "volume_unit_sheet", pixels: 112}
+      - {field: "e1rm_sheet", pixels: 112}
+      - {field: "e1rm_unit_sheet", pixels: 104}
+      - {field: "sheet_formula_version", pixels: 118}
+
 tabs:
   - logical_key: "tab:start"
     title: "Старт"

@@ -15,52 +15,36 @@ from workout_tracker.contracts import (
 
 
 SCHEMA_PATH = Path("config/schema.yaml")
+BLUEPRINT_PATH = Path("config/workbook-blueprint.yaml")
 
 
 def _valid_blueprint() -> dict[str, object]:
-    return {
-        "workbook_contract_version": "1.0.0",
-        "schema_version": "1.1.0",
-        "formula_version": "metrics-v1",
-        "program_bootstrap_version": "program-v1.0.0",
-        "owner": "workout_tracker",
-        "properties": {
-            "locale": "uk_UA",
-            "time_zone": "America/New_York",
-        },
-        "formula_registry": [
-            {
-                "formula_id": "session_status",
-                "formula_version": "metrics-v1",
-                "text": '=IF(A2="","",A2)',
-            }
-        ],
-        "tabs": [
-            {
-                "logical_key": "tab:program",
-                "title": "Програма",
-                "owner": "workout_tracker",
-                "authority_role": "operational_program_prescriptions",
-                "source_schema_tab": "program",
-                "managed_objects": [
-                    {
-                        "logical_key": "formula:program_status",
-                        "kind": "formula",
-                        "owner": "workout_tracker",
-                        "source_column_refs": ["program_item_id"],
-                        "formula_id": "session_status",
-                    }
-                ],
-            },
-            {
-                "logical_key": "tab:start",
-                "title": "Старт",
-                "owner": "workout_tracker",
-                "authority_role": "user_interface",
-                "managed_objects": [],
-            },
-        ],
-    }
+    payload = yaml.safe_load(BLUEPRINT_PATH.read_text(encoding="utf-8"))
+    payload["formula_registry"] = [
+        {
+            "formula_id": "session_status",
+            "formula_version": "metrics-v1",
+            "text": '=IF(A2="","",A2)',
+        }
+    ]
+    tabs = payload["tabs"]
+    program = next(tab for tab in tabs if tab["logical_key"] == "tab:program")
+    start = next(tab for tab in tabs if tab["logical_key"] == "tab:start")
+    program["managed_objects"] = [
+        {
+            "logical_key": "formula:program_status",
+            "kind": "formula",
+            "owner": "workout_tracker",
+            "source_column_refs": ["program_item_id"],
+            "formula_id": "session_status",
+        }
+    ]
+    payload["tabs"] = [
+        program,
+        start,
+        *(tab for tab in tabs if tab not in (program, start)),
+    ]
+    return payload
 
 
 def _write_yaml(path: Path, payload: object) -> Path:
