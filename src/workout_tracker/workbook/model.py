@@ -8,6 +8,10 @@ from workout_tracker.contracts import (
     SourceSchema,
     WorkbookBlueprint,
 )
+from workout_tracker.contracts.blueprint import (
+    DashboardBlueprint,
+    FormulaPlacementBlueprint,
+)
 
 
 class DesiredWorkbookCompilationError(ValueError):
@@ -129,6 +133,7 @@ class ReservePool:
 class DesiredWorkbook:
     workbook_contract_version: str
     schema_version: str
+    formula_version: str
     program_bootstrap_version: str
     locale: str
     time_zone: str
@@ -141,6 +146,8 @@ class DesiredWorkbook:
     protections: tuple[DesiredProtection, ...]
     layouts: tuple[DesiredLayout, ...]
     reserve_pools: tuple[ReservePool, ...]
+    formula_placements: tuple[FormulaPlacementBlueprint, ...]
+    dashboard: DashboardBlueprint
 
     def tab_by_schema_key(self, schema_key: str) -> DesiredTab | None:
         return next(
@@ -469,6 +476,7 @@ def compile_desired_workbook(
     return DesiredWorkbook(
         workbook_contract_version=blueprint.workbook_contract_version,
         schema_version=schema.versions.schema.current,
+        formula_version=blueprint.formula_version,
         program_bootstrap_version=program.program_bootstrap_version,
         locale=locale,
         time_zone=time_zone,
@@ -519,6 +527,8 @@ def compile_desired_workbook(
             for item in blueprint.tab_layouts
         ),
         reserve_pools=_compile_reserve_pools(blueprint),
+        formula_placements=blueprint.formula_placements,
+        dashboard=blueprint.dashboard,
     )
 
 

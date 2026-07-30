@@ -1,4 +1,4 @@
-workbook_contract_version: "1.0.0"
+workbook_contract_version: "1.1.0"
 schema_version: "1.1.0"
 formula_version: "metrics-v1"
 program_bootstrap_version: "program-v1.0.0"
@@ -8,7 +8,74 @@ properties:
   locale: "uk_UA"
   time_zone: "America/New_York"
 
-formula_registry: []
+formula_registry:
+  - {formula_id: "working_set_count_v1", formula_version: "metrics-v1"}
+  - {formula_id: "rep_volume_v1", formula_version: "metrics-v1"}
+  - {formula_id: "load_volume_v1", formula_version: "metrics-v1"}
+  - {formula_id: "maximum_comparable_load_v1", formula_version: "metrics-v1"}
+  - {formula_id: "epley_e1rm_v1", formula_version: "metrics-v1"}
+  - {formula_id: "rir_summary_v1", formula_version: "metrics-v1"}
+  - {formula_id: "rest_summary_v1", formula_version: "metrics-v1"}
+  - {formula_id: "session_completion_v1", formula_version: "metrics-v1"}
+  - {formula_id: "data_quality_status_v1", formula_version: "metrics-v1"}
+
+formula_placements:
+  - {logical_key: "formula:sessions:working_sets", tab: "Сесії", formula_id: "working_set_count_v1", formula_version: "metrics-v1", value_field: "working_set_count_sheet", status_field: "risk_flags_sheet"}
+  - {logical_key: "formula:sessions:load_volume", tab: "Сесії", formula_id: "load_volume_v1", formula_version: "metrics-v1", value_field: "volume_sheet", status_field: "risk_flags_sheet"}
+  - {logical_key: "formula:sessions:rir", tab: "Сесії", formula_id: "rir_summary_v1", formula_version: "metrics-v1", value_field: "average_rir_sheet", status_field: "risk_flags_sheet"}
+  - {logical_key: "formula:sessions:rest", tab: "Сесії", formula_id: "rest_summary_v1", formula_version: "metrics-v1", value_field: "average_rest_seconds_sheet", status_field: "risk_flags_sheet"}
+  - {logical_key: "formula:sessions:completion", tab: "Сесії", formula_id: "session_completion_v1", formula_version: "metrics-v1", value_field: "observed_set_count_sheet", status_field: "risk_flags_sheet"}
+  - {logical_key: "formula:sessions:quality", tab: "Сесії", formula_id: "data_quality_status_v1", formula_version: "metrics-v1", value_field: "risk_flags_sheet", status_field: "sheet_formula_version"}
+  - {logical_key: "formula:sets:load_volume", tab: "Підходи", formula_id: "load_volume_v1", formula_version: "metrics-v1", value_field: "volume_sheet", status_field: "volume_unit_sheet", unit_field: "volume_unit_sheet"}
+  - {logical_key: "formula:sets:e1rm", tab: "Підходи", formula_id: "epley_e1rm_v1", formula_version: "metrics-v1", value_field: "e1rm_sheet", status_field: "e1rm_unit_sheet", unit_field: "e1rm_unit_sheet"}
+  - {logical_key: "formula:sets:quality", tab: "Підходи", formula_id: "data_quality_status_v1", formula_version: "metrics-v1", value_field: "volume_unit_sheet", status_field: "sheet_formula_version"}
+
+dashboard:
+  logical_key: "dashboard:main"
+  title: "Дашборд"
+  theme: "light_high_contrast"
+  decorative_merged_cells: false
+  section_order: ["summary_cards", "filters", "cohort_safe_trends", "data_quality_statuses"]
+  summary_cards:
+    - {metric_key: "sessions_per_week_type", label: "Сесії за тиждень і типом", formula_id: "session_completion_v1", formula_version: "metrics-v1", value_field: "session_count", status_field: "metric_status", unit: "count", row: 1, column: 1, width: 3, height: 2}
+    - {metric_key: "working_set_count", label: "Робочі підходи", formula_id: "working_set_count_v1", formula_version: "metrics-v1", value_field: "metric_value", status_field: "metric_status", unit: "count", row: 1, column: 4, width: 3, height: 2}
+    - {metric_key: "rep_volume", label: "Виконані повтори", formula_id: "rep_volume_v1", formula_version: "metrics-v1", value_field: "metric_value", status_field: "metric_status", unit: "rep", row: 1, column: 7, width: 3, height: 2}
+    - {metric_key: "comparable_load_volume", label: "Порівнюваний обсяг", formula_id: "load_volume_v1", formula_version: "metrics-v1", value_field: "metric_value", status_field: "metric_status", unit: "cohort unit", row: 1, column: 10, width: 3, height: 2}
+    - {metric_key: "best_eligible_e1rm", label: "Найкращий допустимий e1RM", formula_id: "epley_e1rm_v1", formula_version: "metrics-v1", value_field: "metric_value", status_field: "metric_status", unit: "kg", row: 1, column: 13, width: 3, height: 2}
+  filters:
+    - {logical_key: "dashboard_filter:workout_type", label: "Тип тренування", field: "workout_type", control: "dropdown", source_ref: "named_range:workout_types", required: false}
+    - {logical_key: "dashboard_filter:date_range", label: "Діапазон дат", field: "date_range", control: "date_range", source_ref: "Сесії.session_date", required: true}
+    - {logical_key: "dashboard_filter:exercise_variant", label: "Варіант вправи", field: "exercise_variant_id", control: "dropdown", source_ref: "Підходи.exercise_variant_id", required: true}
+    - {logical_key: "dashboard_filter:cohort", label: "Когорта порівняння", field: "comparison_cohort_id", control: "dropdown", source_ref: "Підходи.comparison_cohort_id", required: true}
+  helper_ranges:
+    - logical_key: "dashboard_helper:load_volume"
+      formula_id: "load_volume_v1"
+      formula_version: "metrics-v1"
+      fields: ["session_date", "session_id", "workout_type", "exercise_variant_id", "equipment_id", "setup_id", "load_basis", "implement_count", "comparison_cohort_id", "assistance_semantics", "metric_value", "metric_unit", "metric_status", "metric_reason"]
+      filter_fields: ["workout_type", "date_range", "exercise_variant_id", "comparison_cohort_id"]
+      one_cohort_per_series: true
+      null_for_unavailable: true
+    - logical_key: "dashboard_helper:e1rm"
+      formula_id: "epley_e1rm_v1"
+      formula_version: "metrics-v1"
+      fields: ["session_date", "session_id", "workout_type", "exercise_variant_id", "equipment_id", "setup_id", "load_basis", "implement_count", "comparison_cohort_id", "assistance_semantics", "metric_value", "metric_unit", "metric_status", "metric_reason"]
+      filter_fields: ["workout_type", "date_range", "exercise_variant_id", "comparison_cohort_id"]
+      one_cohort_per_series: true
+      null_for_unavailable: true
+    - logical_key: "dashboard_helper:rir"
+      formula_id: "rir_summary_v1"
+      formula_version: "metrics-v1"
+      fields: ["session_date", "session_id", "workout_type", "exercise_variant_id", "equipment_id", "setup_id", "load_basis", "implement_count", "comparison_cohort_id", "assistance_semantics", "program_item_id", "program_version_id", "actual_rir", "target_rir_min", "target_rir_max", "metric_value", "metric_unit", "metric_status", "metric_reason"]
+      filter_fields: ["workout_type", "date_range", "exercise_variant_id", "comparison_cohort_id"]
+      one_cohort_per_series: true
+      null_for_unavailable: true
+  charts:
+    - {logical_key: "dashboard_chart:load_volume", title: "Порівнюваний обсяг навантаження", helper_range: "dashboard_helper:load_volume", domain: "session_date", series: ["metric_value"], header_count: 1, interpolate_nulls: false, alt_text: "Лінія порівнюваного обсягу для однієї когорти; пропуски означають відсутні або непорівнювані дані.", geometry: {row: 9, column: 1, width: 640, height: 300}, textual_status_field: "metric_status", cohort_required: true}
+    - {logical_key: "dashboard_chart:e1rm", title: "Найкращий допустимий e1RM", helper_range: "dashboard_helper:e1rm", domain: "session_date", series: ["metric_value"], header_count: 1, interpolate_nulls: false, alt_text: "Тренд e1RM для одного точного варіанта та когорти з видимими пропусками.", geometry: {row: 9, column: 9, width: 640, height: 300}, textual_status_field: "metric_status", cohort_required: true}
+    - {logical_key: "dashboard_chart:rir", title: "Цільовий та фактичний RIR", helper_range: "dashboard_helper:rir", domain: "session_date", series: ["actual_rir", "target_rir_min", "target_rir_max"], header_count: 1, interpolate_nulls: false, alt_text: "Фактичний RIR поруч із цільовим діапазоном тієї самої prescription version.", geometry: {row: 25, column: 1, width: 640, height: 300}, textual_status_field: "metric_status", cohort_required: true}
+  data_quality_statuses: ["ok", "partial", "missing", "incomparable", "insufficient_data", "not_applicable", "invalid"]
+  progression_status: {label: "Останній deterministic progression result", source_kind: "deterministic_rules_output", ruleset_ref: "config/progression-rules.yaml#deterministic_progression", status_field: "status", recommendation_semantics: false}
+  recommendation_status: {label: "Статус рекомендацій", source_tab: "Рекомендації", allowed_statuses: ["proposed", "accepted", "rejected"], status_field: "status", computes_recommendations: false}
 
 presentation:
   palette:

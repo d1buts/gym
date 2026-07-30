@@ -20,13 +20,12 @@ BLUEPRINT_PATH = Path("config/workbook-blueprint.yaml")
 
 def _valid_blueprint() -> dict[str, object]:
     payload = yaml.safe_load(BLUEPRINT_PATH.read_text(encoding="utf-8"))
-    payload["formula_registry"] = [
+    payload["formula_registry"].append(
         {
             "formula_id": "session_status",
             "formula_version": "metrics-v1",
-            "text": '=IF(A2="","",A2)',
         }
-    ]
+    )
     tabs = payload["tabs"]
     program = next(tab for tab in tabs if tab["logical_key"] == "tab:program")
     start = next(tab for tab in tabs if tab["logical_key"] == "tab:start")

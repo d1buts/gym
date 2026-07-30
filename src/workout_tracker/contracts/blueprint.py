@@ -203,7 +203,109 @@ class TabLayoutBlueprint(StrictModel):
 class FormulaBlueprint(StrictModel):
     formula_id: str
     formula_version: str
-    text: str
+
+
+class FormulaPlacementBlueprint(StrictModel):
+    logical_key: str
+    tab: str
+    formula_id: str
+    formula_version: str
+    value_field: str
+    status_field: str
+    unit_field: str | None = None
+
+
+class DashboardCardBlueprint(StrictModel):
+    metric_key: str
+    label: str
+    formula_id: str
+    formula_version: str
+    value_field: str
+    status_field: str
+    unit: str
+    row: int
+    column: int
+    width: int
+    height: int
+
+
+class DashboardFilterBlueprint(StrictModel):
+    logical_key: str
+    label: str
+    field: str
+    control: Literal["dropdown", "date_range"]
+    source_ref: str
+    required: bool
+
+
+class DashboardHelperRangeBlueprint(StrictModel):
+    logical_key: str
+    formula_id: str
+    formula_version: str
+    fields: tuple[str, ...]
+    filter_fields: tuple[str, ...]
+    one_cohort_per_series: Literal[True]
+    null_for_unavailable: Literal[True]
+
+
+class ChartGeometryBlueprint(StrictModel):
+    row: int
+    column: int
+    width: int
+    height: int
+
+
+class DashboardChartBlueprint(StrictModel):
+    logical_key: str
+    title: str
+    helper_range: str
+    domain: str
+    series: tuple[str, ...]
+    header_count: Literal[1]
+    interpolate_nulls: Literal[False]
+    alt_text: str
+    geometry: ChartGeometryBlueprint
+    textual_status_field: str
+    cohort_required: bool
+
+
+class DashboardProgressionStatusBlueprint(StrictModel):
+    label: str
+    source_kind: Literal["deterministic_rules_output"]
+    ruleset_ref: str
+    status_field: str
+    recommendation_semantics: Literal[False]
+
+
+class DashboardRecommendationStatusBlueprint(StrictModel):
+    label: str
+    source_tab: Literal["Рекомендації"]
+    allowed_statuses: tuple[Literal["proposed", "accepted", "rejected"], ...]
+    status_field: str
+    computes_recommendations: Literal[False]
+
+
+class DashboardBlueprint(StrictModel):
+    logical_key: str
+    title: Literal["Дашборд"]
+    theme: Literal["light_high_contrast"]
+    decorative_merged_cells: Literal[False]
+    section_order: tuple[
+        Literal[
+            "summary_cards",
+            "filters",
+            "cohort_safe_trends",
+            "data_quality_statuses",
+        ],
+        ...,
+    ]
+    summary_cards: tuple[DashboardCardBlueprint, ...]
+    filters: tuple[DashboardFilterBlueprint, ...]
+    helper_ranges: tuple[DashboardHelperRangeBlueprint, ...]
+    charts: tuple[DashboardChartBlueprint, ...]
+    data_quality_statuses: tuple[str, ...]
+    progression_status: DashboardProgressionStatusBlueprint
+    recommendation_status: DashboardRecommendationStatusBlueprint
 
 
 class ManagedObjectBlueprint(StrictModel):
@@ -241,6 +343,8 @@ class WorkbookBlueprint(StrictModel):
     owner: Literal["workout_tracker"]
     properties: WorkbookProperties
     formula_registry: tuple[FormulaBlueprint, ...]
+    formula_placements: tuple[FormulaPlacementBlueprint, ...]
+    dashboard: DashboardBlueprint
     presentation: Presentation
     validation_policy: ValidationPolicyBlueprint
     quality_diagnostics: QualityDiagnosticsBlueprint
@@ -312,6 +416,11 @@ def _validate_blueprint_semantics(
     logical_keys.extend(item.logical_key for item in blueprint.managed_input_zones)
     logical_keys.extend(item.logical_key for item in blueprint.protections)
     logical_keys.extend(item.logical_key for item in blueprint.tab_layouts)
+    logical_keys.extend(item.logical_key for item in blueprint.formula_placements)
+    logical_keys.append(blueprint.dashboard.logical_key)
+    logical_keys.extend(item.logical_key for item in blueprint.dashboard.filters)
+    logical_keys.extend(item.logical_key for item in blueprint.dashboard.helper_ranges)
+    logical_keys.extend(item.logical_key for item in blueprint.dashboard.charts)
     duplicate_count = len(logical_keys) - len(set(logical_keys))
     duplicate_formulas = len(formula_ids) - len(set(formula_ids))
     if duplicate_count or duplicate_formulas:
@@ -462,8 +571,94 @@ def _validate_blueprint_semantics(
     for formula in blueprint.formula_registry:
         if formula.formula_version != blueprint.formula_version:
             _fail("FORMULA_VERSION_UNSUPPORTED", 1, digest)
-        if not formula.text.startswith("="):
+
+    protected_by_tab = {
+        item.tab: set(item.fields) for item in blueprint.protections
+        if item.logical_key.endswith(":formulas")
+    }
+    for placement in blueprint.formula_placements:
+        tab = tab_by_title.get(placement.tab)
+        if (
+            tab is None
+            or tab.source_schema_tab is None
+            or placement.formula_id not in registered_formulas
+            or placement.formula_version != blueprint.formula_version
+        ):
             _fail("FORMULA_NOT_REGISTERED", 1, digest)
+        source_tab = source_schema.tab(tab.source_schema_tab)
+        assert source_tab is not None
+        fields = {column.field for column in source_tab.columns}
+        referenced = {
+            placement.value_field,
+            placement.status_field,
+            *(() if placement.unit_field is None else (placement.unit_field,)),
+        }
+        if not referenced <= fields:
+            _fail("SOURCE_COLUMN_UNKNOWN", 1, digest)
+        if not referenced <= protected_by_tab.get(placement.tab, set()):
+            _fail("FORMULA_PLACEMENT_UNPROTECTED", 1, digest)
+
+    dashboard = blueprint.dashboard
+    if (
+        tuple(dashboard.section_order)
+        != (
+            "summary_cards",
+            "filters",
+            "cohort_safe_trends",
+            "data_quality_statuses",
+        )
+        or len({item.metric_key for item in dashboard.summary_cards})
+        != len(dashboard.summary_cards)
+        or any(
+            item.formula_id not in registered_formulas
+            or item.formula_version != blueprint.formula_version
+            or not item.status_field
+            for item in dashboard.summary_cards
+        )
+    ):
+        _fail("DASHBOARD_CONTRACT_INVALID", 1, digest)
+    helper_keys = {item.logical_key for item in dashboard.helper_ranges}
+    required_filters = {
+        "workout_type",
+        "date_range",
+        "exercise_variant_id",
+        "comparison_cohort_id",
+    }
+    if required_filters - {item.field for item in dashboard.filters}:
+        _fail("DASHBOARD_FILTER_INVALID", 1, digest)
+    cohort_fields = {
+        "exercise_variant_id",
+        "equipment_id",
+        "setup_id",
+        "load_basis",
+        "comparison_cohort_id",
+        "assistance_semantics",
+        "metric_value",
+        "metric_unit",
+        "metric_status",
+        "metric_reason",
+    }
+    for chart in dashboard.charts:
+        helper = next(
+            (
+                item
+                for item in dashboard.helper_ranges
+                if item.logical_key == chart.helper_range
+            ),
+            None,
+        )
+        if (
+            chart.helper_range not in helper_keys
+            or helper is None
+            or not chart.domain
+            or not chart.series
+            or not chart.alt_text
+            or not chart.textual_status_field
+            or chart.geometry.width < 480
+            or chart.geometry.height < 260
+            or (chart.cohort_required and not cohort_fields <= set(helper.fields))
+        ):
+            _fail("DASHBOARD_CHART_INVALID", 1, digest)
 
 
 def load_workbook_blueprint(
