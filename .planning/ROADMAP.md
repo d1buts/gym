@@ -23,7 +23,16 @@ Milestone спочатку робить Google Spreadsheet корисним са
   2. Користувач може з телефона знайти сьогоднішній комплекс і внести workout facts через validated, hinted і formatted input fields, не редагуючи protected formula/system columns.
   3. Formulas і dashboard показують лише contract-defined metrics; missing або incomparable input видно як explicit status і `NULL`, а не zero.
   4. Повторний setup не створює duplicate tabs, named ranges, formulas чи program items і не змінює logical workbook content.
-**Plans**: TBD
+**Plans**: 9 plans
+  1. `01-01` — Bootstrap and lock the approved Python toolchain.
+  2. `01-02` — Define strict repository and workbook contracts.
+  3. `01-03` — Deliver the exact seven-tab managed workbook topology.
+  4. `01-04` — Transcribe and validate four versioned workout complexes.
+  5. `01-05` — Deliver mobile-first manual input, validation and protection.
+  6. `01-06` — Implement pinned formulas, fixtures and cohort-safe dashboard.
+  7. `01-07` — Prove offline reconciliation and second-run idempotency.
+  8. `01-08` — Add the guarded Google Sheets transport and CLI.
+  9. `01-09` — Close with privacy-safe live and manual Google UAT.
 **UI hint**: yes
 
 ### Phase 2: Controlled ChatGPT Workout Capture
