@@ -1,5 +1,5 @@
 workbook_contract_version: "1.0.0"
-schema_version: "1.0.0"
+schema_version: "1.1.0"
 formula_version: "metrics-v1"
 program_bootstrap_version: "program-v1.0.0"
 owner: "workout_tracker"

@@ -1,4 +1,4 @@
-schema_version: "1.0.0"
+schema_version: "1.1.0"
 ruleset_id: workout-progression
 ruleset_version: "1.1.0"
 status: specification

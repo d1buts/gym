@@ -60,7 +60,7 @@ def test_blueprint_pins_workbook_properties_and_versions() -> None:
     blueprint = _load_blueprint()
 
     assert blueprint.workbook_contract_version == "1.0.0"
-    assert blueprint.schema_version == "1.0.0"
+    assert blueprint.schema_version == "1.1.0"
     assert blueprint.formula_version == "metrics-v1"
     assert blueprint.program_bootstrap_version == "program-v1.0.0"
     assert blueprint.properties.locale == "uk_UA"

@@ -8,6 +8,7 @@ from uuid import UUID
 
 import pytest
 import yaml
+from pydantic import ValidationError
 
 import workout_tracker.contracts as contracts
 
@@ -514,9 +515,8 @@ def test_used_program_version_conflicts_instead_of_mutating(
 
 def test_bootstrap_is_frozen_and_source_hashes_match_repository_files() -> None:
     bootstrap = _load()
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         bootstrap.program_version_id = "pver_00000000-0000-4000-8000-000000000000"
     for item in bootstrap.prescriptions:
         assert len(item.source_sha256) == 64
         assert len(item.definition_sha256) == 64
-

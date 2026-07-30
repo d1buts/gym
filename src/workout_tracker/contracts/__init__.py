@@ -9,13 +9,23 @@ from workout_tracker.contracts.source_schema import (
     SourceSchema,
     load_source_schema,
 )
+from workout_tracker.contracts.program import (
+    ProgramBootstrap,
+    ProgramPrescription,
+    load_program_bootstrap,
+    program_definition_sha256,
+)
 
 __all__ = [
     "ContractValidationError",
     "ManagedObjectBlueprint",
+    "ProgramBootstrap",
+    "ProgramPrescription",
     "SourceSchema",
     "TabBlueprint",
     "WorkbookBlueprint",
     "load_source_schema",
+    "load_program_bootstrap",
     "load_workbook_blueprint",
+    "program_definition_sha256",
 ]

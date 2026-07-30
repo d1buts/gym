@@ -20,7 +20,7 @@ SCHEMA_PATH = Path("config/schema.yaml")
 def _valid_blueprint() -> dict[str, object]:
     return {
         "workbook_contract_version": "1.0.0",
-        "schema_version": "1.0.0",
+        "schema_version": "1.1.0",
         "formula_version": "metrics-v1",
         "program_bootstrap_version": "program-v1.0.0",
         "owner": "workout_tracker",
@@ -81,7 +81,7 @@ def test_valid_repository_contracts_load_as_frozen_typed_models(
         source_schema,
     )
 
-    assert source_schema.contract.schema_version == "1.0.0"
+    assert source_schema.contract.schema_version == "1.1.0"
     assert source_schema.sheet_tabs.program.columns[0].data_class == "source_fact"
     assert source_schema.sheet_tabs.sessions.columns[-1].data_class == "sheet_calculated"
     assert blueprint.tabs[0].managed_objects[0].formula_id == "session_status"

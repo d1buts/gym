@@ -1,6 +1,6 @@
 # Нормативний контракт даних
 
-**Version:** `1.0.0`
+**Version:** `1.1.0`
 
 **Status:** Accepted design contract
 
@@ -78,7 +78,7 @@ artifact. Він **НЕ МОЖЕ** непомітно перезаписуват
 
 | Поле/metadata | Поточне значення | Що воно версіонує |
 |---|---|---|
-| `schema_version` | `1.0.0` | Заголовки, типи, nullable та cross-field правила |
+| `schema_version` | `1.1.0` | Заголовки, типи, nullable та cross-field правила |
 | `program_version_id` | source-owned `pver_<uuid4>` | Конкретну operational version програми |
 | `normalizer_version` | `normalizer-v1` | Перетворення source row у normalized model |
 | `formula_version` | `metrics-v1` | Eligibility, формули й одиниці локальних метрик |
@@ -238,6 +238,19 @@ priority, technical_notes, definition_sha256
 `definition_sha256` є hash canonical prescription payload, а не primary ID.
 Він виявляє drift, але не замінює `program_item_id` або
 `program_version_id`.
+
+У schema `1.1.0` program-level `rest_seconds_min` і
+`rest_seconds_max` можуть бути `NULL` лише як пара, якщо bootstrap source не
+задає prescribed rest. Якщо значення відомі, обидві межі обов’язкові й
+`rest_seconds_min <= rest_seconds_max`.
+
+Program-level `equipment_id`, `setup_id` і `comparison_cohort_id` також
+можуть бути `NULL`, коли repository source не задає відповідний факт.
+`comparison_cohort_id` обов’язково лишається `NULL`, якщо `equipment_id` або
+`setup_id` є `NULL`. Sentinel values `standard`, `unspecified`, `unknown` та
+припущене `bodyweight` не представляють unknown і заборонені. Це послаблення
+стосується лише prescription: фактично виконаний row у `Підходи` як і раніше
+має non-null exact variant, equipment, setup і comparison cohort.
 
 Rows групуються за `program_version_id` у canonical entity
 `program_version`. Для всіх rows групи мають збігатися `schema_version`,
@@ -523,7 +536,8 @@ Placeholder values `N/A`, `unknown`, `невідомо` у typed field не є n
    `program_version_id`;
 4. `complete` session має `completed_at` і рівно `expected_set_count`
    non-void sets;
-5. program min не перевищує max для reps, duration, RIR і rest;
+5. program min не перевищує max для reps, duration і RIR; rest або відсутній
+   парою, або має обидві межі з `min <= max`;
 6. load fields утворюють дозволену комбінацію;
 7. set components відповідають `measurement_kind`, `laterality` і `status`;
 8. skipped/void rows мають причину;
