@@ -43,6 +43,9 @@ capture, локальний mirror і recommendations належать наст�
   visible validation status і не перетворюється на zero.
 - Dates/times використовують timezone і locale, явно задані workbook
   properties.
+- Початковий workbook використовує locale `uk_UA` і timezone
+  `America/New_York`; зміна цих properties є explicit configuration change,
+  а не runtime inference.
 
 ### Setup, formulas і portability
 - Workbook описується version-controlled machine-readable blueprint і
@@ -68,6 +71,12 @@ capture, локальний mirror і recommendations належать наст�
   `google-api-python-client`, `google-auth` і pytest через uv із committed
   lockfile; executor перевіряє package source та pinned resolution перед
   використанням.
+- Package-legitimacy checkpoint для цього базового set схвалено користувачем
+  відповіддю «на всі запитання — 1»; executor не повинен повторно блокувати
+  offline setup, якщо canonical package names/sources не змінилися.
+- Live test-Spreadsheet UAT використовує local installed-app OAuth із
+  мінімальним Sheets scope, untracked token storage та disposable test target;
+  service account і production target не є default Phase 1 path.
 
 </decisions>
 

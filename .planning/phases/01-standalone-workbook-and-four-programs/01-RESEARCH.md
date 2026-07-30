@@ -1,6 +1,7 @@
 # Phase 1: Standalone Workbook and Four Programs — Research
 
 **Researched:** 2026-07-25  
+**Revised:** 2026-07-30
 **Domain:** Google Sheets workbook provisioning, declarative reconciliation, workout-program bootstrap  
 **Confidence:** HIGH для repository contracts; MEDIUM для Google API integration details і package versions
 
@@ -36,6 +37,9 @@
   visible validation status і не перетворюється на zero.
 - Dates/times використовують timezone і locale, явно задані workbook
   properties.
+- Початковий workbook використовує locale `uk_UA` і timezone
+  `America/New_York`; зміна цих properties є explicit configuration change,
+  а не runtime inference.
 
 ### Setup, formulas і portability
 - Workbook описується version-controlled machine-readable blueprint і
@@ -46,6 +50,9 @@
   перевіряються тими самими canonical fixtures, що й локальна metric semantics.
 - Program bootstrap бере чотири комплекси з repository specifications,
   детерміновано створює початкові IDs і не змінює вже використану version.
+- Lower Hypertrophy C1 у початковій version є exact
+  `Dumbbell Romanian deadlift`; перехід на barbell variant потребує нової
+  program version і окремого comparison cohort.
 - Clean-workbook та second-run idempotency UAT виконуються на test Spreadsheet;
   production locator і credentials лишаються поза Git.
 
@@ -54,6 +61,16 @@
   обираються за project constraints та uv-style tooling.
 - Точні accent colors, column widths і chart geometry можуть бути підібрані під
   accessibility та mobile UAT без зміни domain semantics.
+- Схвалений базовий dependency set: Pydantic, PyYAML,
+  `google-api-python-client`, `google-auth` і pytest через uv із committed
+  lockfile; executor перевіряє package source та pinned resolution перед
+  використанням.
+- Package-legitimacy checkpoint для цього базового set схвалено користувачем
+  відповіддю «на всі запитання — 1»; executor не повинен повторно блокувати
+  offline setup, якщо canonical package names/sources не змінилися.
+- Live test-Spreadsheet UAT використовує local installed-app OAuth із
+  мінімальним Sheets scope, untracked token storage та disposable test target;
+  service account і production target не є default Phase 1 path.
 
 ### Deferred Ideas (OUT OF SCOPE)
 - ChatGPT preview/confirm/write tools — Phase 2.
@@ -90,9 +107,9 @@
 
 Google adapter має спочатку читати вузький structural projection через `spreadsheets.get`, потім застосовувати explicit, field-masked requests через `spreadsheets.batchUpdate`, після чого повторно читати й canonicalize state. Один `batchUpdate` повністю валідовується до mutation і застосовує request list атомарно, але collaborator edits можуть змінити результат одразу після відповіді; тому потрібні pre/post fingerprints і bounded retry, а не припущення про транзакційний lock. [CITED: https://developers.google.com/workspace/sheets/api/reference/rest/v4/spreadsheets/get] [CITED: https://developers.google.com/workspace/sheets/api/reference/rest/v4/spreadsheets/batchUpdate]
 
-Найважливіший невирішений domain gap: `04 lower hypertrophy.md` задає `Dumbbell або barbell Romanian deadlift`, тоді як schema вимагає один exact `exercise_variant_id`, `equipment_id`, `setup_id` і cohort. Реалізація не повинна мовчки вибрати variant. Planner має поставити human decision/checkpoint: або закріпити один initial prescribed variant, або version-bump contract для first-class alternatives. [VERIFIED: codebase — `04 lower hypertrophy.md`, `config/schema.yaml`, `docs/architecture/DATA_MODEL.md`]
+Колишні decision gaps закриті в оновленому `01-CONTEXT.md`: Lower Hypertrophy C1 має exact variant `Dumbbell Romanian deadlift`; початкові workbook properties — locale `uk_UA` і timezone `America/New_York`; live UAT default — local installed-app OAuth із minimum Sheets scope, untracked token storage і disposable test target. Barbell RDL надалі означає нову program version та окремий comparison cohort. [VERIFIED: codebase — updated `01-CONTEXT.md`]
 
-**Primary recommendation:** реалізувати `Blueprint → validate → observe → reconcile → dry-run/apply → verify` з immutable typed models, canonical logical hashes і двома backends (`InMemoryWorkbookGateway`, `GoogleSheetsGateway`); live test-workbook UAT виконувати лише після explicit credential/locator preflight. [VERIFIED: codebase — locked context]
+**Primary recommendation:** реалізувати `Blueprint → validate → observe → reconcile → dry-run/apply → verify` з immutable typed models, canonical logical hashes і двома backends (`InMemoryWorkbookGateway`, `GoogleSheetsGateway`); live test-workbook UAT виконувати через approved installed-app OAuth path лише після explicit credential/locator preflight. [VERIFIED: codebase — locked context]
 
 ## Architectural Responsibility Map
 
@@ -133,7 +150,7 @@ Google adapter має спочатку читати вузький structural pr
 | YAML blueprint | JSON | JSON reduces parser dependency, but repository contracts are already YAML and human review is central; use safe-loaded YAML plus strict Pydantic. [VERIFIED: codebase — `config/*.yaml`] |
 | Pure fake gateway | HTTP mocks | HTTP mocks overfit discovery-client internals; fake the project-owned port and separately contract-test request compilation. [RECOMMENDATION: architecture reasoning] |
 
-**Installation (after package checkpoint and uv installation):**
+**Installation (after uv installation and executor re-check of canonical package names/sources):**
 
 ```bash
 uv add "pydantic>=2.13,<3" "PyYAML>=6.0,<7" \
@@ -145,18 +162,18 @@ Registry versions and publish dates were checked through PyPI JSON because `pip`
 
 ## Package Legitimacy Audit
 
-The required legitimacy seam found all packages on PyPI with established source repositories, but returned `SUS` because download telemetry was unavailable; the two Google packages were additionally flagged `too-new` for their latest release. Protocol therefore requires a human checkpoint before install despite authoritative documentation. [VERIFIED: package-legitimacy seam]
+The required legitimacy seam found all packages on PyPI with established source repositories, but returned `SUS` because download telemetry was unavailable; the two Google packages were additionally flagged `too-new` for their latest release. The user explicitly resolved the grouped checkpoint with blanket choice 1 for this canonical set through uv. Executor proceeds without another human block only while package names and documented sources remain unchanged, and must still verify canonical source plus pinned resolution before use. [VERIFIED: package-legitimacy seam + updated `01-CONTEXT.md`]
 
 | Package | Registry | Age | Downloads | Source Repo | Verdict | Disposition |
 |---|---|---:|---|---|---|---|
-| `pydantic` | PyPI | since 2017 | unavailable | `github.com/pydantic/pydantic` | SUS | Flagged — checkpoint before install |
-| `PyYAML` | PyPI | since 2011 | unavailable | `pyyaml.org` | SUS | Flagged — checkpoint before install |
-| `google-api-python-client` | PyPI | since 2011 | unavailable | `github.com/googleapis/google-api-python-client` | SUS | Flagged — checkpoint before install |
-| `google-auth` | PyPI | since 2016 | unavailable | Google source repository | SUS | Flagged — checkpoint before install |
-| `pytest` | PyPI | since 2010 | unavailable | `github.com/pytest-dev/pytest` | SUS | Flagged — checkpoint before install |
+| `pydantic` | PyPI | since 2017 | unavailable | `github.com/pydantic/pydantic` | SUS | Approved by user for canonical source; executor re-checks source/pin |
+| `PyYAML` | PyPI | since 2011 | unavailable | `pyyaml.org` | SUS | Approved by user for canonical source; executor re-checks source/pin |
+| `google-api-python-client` | PyPI | since 2011 | unavailable | `github.com/googleapis/google-api-python-client` | SUS | Approved by user for canonical source; executor re-checks source/pin |
+| `google-auth` | PyPI | since 2016 | unavailable | Google source repository | SUS | Approved by user for canonical source; executor re-checks source/pin |
+| `pytest` | PyPI | since 2010 | unavailable | `github.com/pytest-dev/pytest` | SUS | Approved by user for canonical source; executor re-checks source/pin |
 
 **Packages removed due to SLOP verdict:** none.  
-**Packages flagged as suspicious [SUS]:** all five; planner inserts one grouped `checkpoint:human-verify` before dependency installation. [VERIFIED: package-legitimacy seam]
+**Packages flagged as suspicious [SUS]:** all five retain their seam verdict for traceability, but the grouped human checkpoint is **RESOLVED** by explicit user approval. Re-open the checkpoint only if a package name or canonical source changes; ordinary version resolution remains executor-verified and locked in `uv.lock`. [VERIFIED: updated `01-CONTEXT.md`]
 
 ## Architecture Patterns
 
@@ -339,9 +356,9 @@ Charts are managed by logical key + observed `chartId`; update spec and position
 **What goes wrong:** technically correct workbook still needs horizontal scrolling or exposes system columns.  
 **Avoidance:** explicit phone UAT for `Старт`, four links/filter views and one full manual session/set flow. [VERIFIED: codebase — `01-CONTEXT.md`]
 
-### Pitfall 6: “Dumbbell або barbell RDL” is silently normalized
-**What goes wrong:** exact variant/equipment/cohort semantics become false.  
-**Avoidance:** block bootstrap fixture approval until an explicit variant or versioned alternative representation is chosen. [VERIFIED: codebase — program spec + schema]
+### Pitfall 6: The resolved Dumbbell RDL is widened back to an alternative
+**What goes wrong:** exact variant/equipment/cohort semantics become false, and a barbell execution is treated as the same prescription.
+**Avoidance:** initial Lower Hypertrophy C1 is exactly `Dumbbell Romanian deadlift`; any switch to barbell creates a new program version and separate comparison cohort. [VERIFIED: updated `01-CONTEXT.md`]
 
 ### Pitfall 7: Test secrets leak through skip diagnostics
 **What goes wrong:** spreadsheet ID, credential path or Google error body enters CI/logs.  
@@ -407,24 +424,21 @@ def test_metric_contract(case: MetricCase) -> None:
 
 | # | Claim | Section | Risk if Wrong |
 |---|---|---|---|
-| — | No unverified domain claim is adopted as a decision. | — | The RDL variant ambiguity remains an explicit open question. |
+| — | No unverified domain claim is adopted as a decision. | — | All prior decision gaps are resolved in updated `01-CONTEXT.md`. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Який exact variant є initial prescription для Lower Hypertrophy C1?**
-   - What we know: Markdown says `Dumbbell або barbell Romanian deadlift`; the data contract requires one exact variant/equipment/setup/cohort. [VERIFIED: codebase]
-   - What's unclear: whether to pin dumbbell, pin barbell, or version the schema for allowed alternatives.
-   - Recommendation: resolve before approving `program-bootstrap.yaml`; do not hide the choice in `technical_notes`.
+1. **Lower Hypertrophy C1 exact variant — RESOLVED**
+   - Decision: initial prescription is `Dumbbell Romanian deadlift`.
+   - Consequence: a barbell variant requires a new `program_version_id`, new program items and a separate comparison cohort; it is not hidden in `technical_notes`. [VERIFIED: updated `01-CONTEXT.md`]
 
-2. **Який test credential profile owner authorizes for Phase 1 UAT?**
-   - What we know: credentials and locator must stay outside Git; setup needs write access to one test Spreadsheet. [VERIFIED: codebase]
-   - What's unclear: installed-user OAuth versus dedicated service account shared only to the test workbook.
-   - Recommendation: default to a dedicated test-only principal with access to exactly one disposable Sheet if the owner can provision it; otherwise use installed OAuth only for local manual UAT. [CITED: https://developers.google.com/workspace/guides/create-credentials]
+2. **Phase 1 live UAT credential profile — RESOLVED**
+   - Decision: local installed-app OAuth with minimum Sheets scope, untracked token storage and a disposable test Spreadsheet is the default.
+   - Consequence: a service account or production target is not the default Phase 1 path; locator and token remain outside Git. [VERIFIED: updated `01-CONTEXT.md`]
 
-3. **What locale/timezone values should the workbook pin?**
-   - What we know: both are required and affect date/number rendering. [VERIFIED: codebase] [CITED: https://developers.google.com/workspace/sheets/api/guides/formats]
-   - What's unclear: exact owner-selected CLDR timezone and supported Ukrainian locale value.
-   - Recommendation: require explicit runtime/blueprint values and assert them in UAT; do not infer from developer host.
+3. **Initial locale/timezone — RESOLVED**
+   - Decision: locale `uk_UA`, timezone `America/New_York`.
+   - Consequence: both are explicit blueprint/apply inputs and UAT assertions; changing either is an explicit configuration change, never host inference. [VERIFIED: updated `01-CONTEXT.md`]
 
 ## Environment Availability
 
@@ -445,7 +459,7 @@ def test_metric_contract(case: MetricCase) -> None:
 
 | Property | Value |
 |---|---|
-| Framework | `pytest 9.1.1` after package checkpoint |
+| Framework | approved canonical `pytest` resolved through uv and pinned in `uv.lock` |
 | Config file | `pyproject.toml` — Wave 0 |
 | Quick run command | `uv run pytest -q tests/unit tests/contract` |
 | Full suite command | `uv run pytest -q` |
@@ -481,14 +495,14 @@ Do not invent formatting/static-check commands until their tools/config exist; a
 
 - [ ] `pyproject.toml`, `uv.lock`, package/module skeleton and pytest config.
 - [ ] `config/workbook-blueprint.yaml` with versioned managed objects.
-- [ ] `config/program-bootstrap.yaml` after RDL variant decision.
+- [ ] `config/program-bootstrap.yaml` with exact Lower Hypertrophy C1 `Dumbbell Romanian deadlift`.
 - [ ] `tests/fixtures/metrics-v1.yaml` and expected status/reason cases.
 - [ ] In-memory gateway plus shared gateway contract suite.
 - [ ] `google_uat` marker that skips unless explicit safe runtime config passes.
 
 ### Live UAT Credential Gate
 
-Before any Google call, require: explicit `--apply`; `WORKOUT_TEST_SOURCE_ALIAS`; locator resolved from untracked secure config; credential resolved without CLI secret; spreadsheet identity/title/tab preflight; confirmation that target is disposable test data; requested Sheets write scope displayed; redacted logger active. Refuse production-like aliases, missing test marker, broad/wildcard selection, permission mismatch or unsafe credential-file permissions. [VERIFIED: codebase privacy constraints]
+Before any Google call, require the approved local installed-app OAuth profile plus: explicit `--apply`; `WORKOUT_TEST_SOURCE_ALIAS`; locator resolved from untracked secure config; token stored untracked and resolved without CLI secret; spreadsheet identity/title/tab preflight; confirmation that target is disposable test data; minimum Sheets scope displayed; redacted logger active. Refuse service-account/production defaults, production-like aliases, missing test marker, broad/wildcard selection, permission mismatch or unsafe token-file permissions. [VERIFIED: updated `01-CONTEXT.md` + codebase privacy constraints]
 
 UAT evidence may record only source alias, blueprint/version hashes, managed object counts, change kinds, redacted error code and pass/fail. Never record spreadsheet ID, URL, token, credential path, user-entered values or Google raw error body. [VERIFIED: codebase — `AGENTS.md`]
 
@@ -500,7 +514,7 @@ Security enforcement is enabled in `.planning/config.json`; Phase 1 must treat a
 
 | Template Category | Applies | Standard Control |
 |---|---|---|
-| V2 Authentication | yes | Delegate OAuth/service-account authentication to Google libraries; no custom tokens. [CITED: https://developers.google.com/workspace/guides/create-credentials] |
+| V2 Authentication | yes | Use approved local installed-app OAuth through Google libraries with minimum Sheets scope and untracked token storage; no custom tokens. [VERIFIED: updated `01-CONTEXT.md`] [CITED: https://developers.google.com/workspace/guides/create-credentials] |
 | V3 Session Management | no web session | Local credential lifecycle only; never persist tokens in repo/logs. [VERIFIED: codebase privacy rules] |
 | V4 Access Control | yes | Exact test-Spreadsheet allowlist, least privilege and no Drive sharing/permission mutation. [VERIFIED: codebase privacy rules] |
 | V5 Input Validation | yes | `safe_load`, Pydantic `extra="forbid"`, allowlisted request compiler, formula/text separation. [CITED: https://docs.pydantic.dev/latest/api/config/] |
@@ -514,7 +528,7 @@ OWASP’s latest stable ASVS is 5.0.0; its chapter numbering differs from the le
 |---|---|---|
 | Wrong/live Spreadsheet target | Spoofing/Tampering | exact allowlist + preflight identity + explicit `--apply` |
 | Formula injection from source text | Tampering | `RAW`/typed strings for text; formulas only from Git registry |
-| Over-broad OAuth credentials | Elevation/Disclosure | test-only principal, minimum Sheets scope, no sharing APIs |
+| Over-broad OAuth credentials | Elevation/Disclosure | installed-app OAuth, minimum Sheets scope, disposable test target, no sharing APIs |
 | Malicious YAML constructor | Elevation | `yaml.safe_load` then strict Pydantic |
 | Unowned object deletion | Tampering/Denial | owner markers; no default delete; explicit conflict |
 | Sensitive Google error/log output | Disclosure | redact before formatting/persistence |
@@ -545,9 +559,9 @@ OWASP’s latest stable ASVS is 5.0.0; its chapter numbering differs from the le
 ## Metadata
 
 **Confidence breakdown:**
-- Standard stack: MEDIUM — package names are authoritative and registry versions were checked, but legitimacy seam returned `SUS` due missing telemetry.
+- Standard stack: MEDIUM — canonical package set is explicitly user-approved and executor re-checks sources/pinned resolution; seam `SUS` verdicts remain recorded due missing telemetry.
 - Architecture: HIGH — directly constrained by accepted repository contracts; Google request behavior checked against official docs.
-- Program bootstrap: HIGH except one explicit unresolved RDL variant decision.
+- Program bootstrap: HIGH — initial Lower Hypertrophy C1 is resolved as exact `Dumbbell Romanian deadlift`.
 - Pitfalls: HIGH for contract/idempotency/privacy risks; MEDIUM for API race/format details from official docs.
 
 **Research date:** 2026-07-25  
