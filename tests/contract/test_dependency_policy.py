@@ -4,6 +4,8 @@ import re
 import tomllib
 from pathlib import Path
 
+import conftest as repository_conftest
+
 
 PROJECT_ROOT = Path(__file__).parents[2]
 PYPROJECT_PATH = PROJECT_ROOT / "pyproject.toml"
@@ -59,3 +61,13 @@ def test_dependency_policy_matches_approved_d20_set_and_sources() -> None:
     assert policy.get("approval") == "D-20"
     assert policy.get("registry") == "https://pypi.org"
     assert policy.get("sources") == EXPECTED_SOURCES
+
+
+def test_google_uat_requires_explicit_live_runner_opt_in() -> None:
+    assert repository_conftest.google_uat_enabled({}) is False
+    assert (
+        repository_conftest.google_uat_enabled(
+            {repository_conftest.GOOGLE_UAT_OPT_IN: "1"}
+        )
+        is True
+    )
