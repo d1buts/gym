@@ -38,6 +38,8 @@ def test_memory_gateway_applies_exact_topology_without_google_state() -> None:
         "Довідники",
         "Дашборд",
     )
+    assert result.observed.locale == "uk_UA"
+    assert result.observed.time_zone == "America/New_York"
     assert not any(
         name == "google" or name.startswith("google.")
         for name in sys.modules
@@ -118,6 +120,31 @@ def test_default_blank_is_preserved_when_it_is_not_the_only_initial_tab() -> Non
     assert result.observed.unmanaged_tabs == (default_blank, notes)
 
 
+def test_clean_initialization_preserves_nonblank_or_nondefault_tabs() -> None:
+    from workout_tracker.adapters.memory import InMemoryWorkbookGateway
+    from workout_tracker.adapters.port import ChangePlan, ObservedTab
+
+    for tab in (
+        ObservedTab(
+            title="Аркуш1",
+            is_empty=False,
+            is_default_blank=True,
+        ),
+        ObservedTab(
+            title="Порожня власна вкладка",
+            is_empty=True,
+            is_default_blank=False,
+        ),
+    ):
+        gateway = InMemoryWorkbookGateway(tabs=(tab,))
+        result = gateway.apply(
+            ChangePlan(blueprint=_blueprint(), clean_initialization=True)
+        )
+
+        assert "UNMANAGED_TAB_PRESENT" in result.statuses
+        assert result.observed.unmanaged_tabs == (tab,)
+
+
 def test_managed_fingerprint_ignores_provider_ids_and_positions() -> None:
     from workout_tracker.adapters.memory import InMemoryWorkbookGateway
     from workout_tracker.adapters.port import ObservedTab
@@ -169,3 +196,18 @@ def test_repeat_apply_is_logically_idempotent() -> None:
     assert first.changed is True
     assert second.changed is False
     assert second.observed.managed_fingerprint == first.observed.managed_fingerprint
+
+
+def test_memory_gateway_source_has_no_google_or_environment_dependency() -> None:
+    source = "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in (
+            Path("src/workout_tracker/adapters/port.py"),
+            Path("src/workout_tracker/adapters/memory.py"),
+        )
+    )
+
+    assert "import google" not in source
+    assert "from google" not in source
+    assert "os.environ" not in source
+    assert "os.getenv" not in source

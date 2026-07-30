@@ -23,6 +23,8 @@ class ObservedTab:
 class ObservedWorkbook:
     tabs: tuple[ObservedTab, ...]
     managed_fingerprint: str
+    locale: str | None = None
+    time_zone: str | None = None
 
     @property
     def managed_tabs(self) -> tuple[ObservedTab, ...]:
