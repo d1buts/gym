@@ -36,7 +36,7 @@ def _desired():
 
 class _UuidSequence:
     def __init__(self) -> None:
-        self.next_value = 1
+        self.next_value = 0x100000
 
     def __call__(self) -> UUID:
         value = UUID(f"00000000-0000-4000-8000-{self.next_value:012x}")
@@ -245,15 +245,12 @@ def test_stale_observed_fingerprint_fails_before_any_apply() -> None:
         InMemoryWorkbookGateway,
         StaleObservedStateError,
     )
-    from workout_tracker.adapters.port import ObservedTab
     from workout_tracker.workbook.reconcile import plan_setup
 
     desired = _desired()
     gateway = InMemoryWorkbookGateway(uuid4_generator=_UuidSequence())
     stale_plan = plan_setup(desired, gateway.observe())
-    gateway.inject_observed_drift(
-        tabs=(ObservedTab(title="Мої нотатки", is_empty=False),)
-    )
+    gateway.inject_observed_drift(locale="en_US")
 
     with pytest.raises(StaleObservedStateError) as caught:
         gateway.apply(stale_plan)

@@ -6,6 +6,9 @@ from typing import Protocol
 from workout_tracker.contracts import WorkbookBlueprint
 
 
+CanonicalPayload = tuple[tuple[str, object], ...]
+
+
 @dataclass(frozen=True, slots=True)
 class ObservedTab:
     title: str
@@ -20,11 +23,31 @@ class ObservedTab:
 
 
 @dataclass(frozen=True, slots=True)
+class ObservedManagedObject:
+    kind: str
+    logical_key: str
+    payload: CanonicalPayload
+    owner: str | None = "workout_tracker"
+    provider_id: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ReserveBinding:
+    entity: str
+    slot_key: str
+    value: str
+    occupied: bool = False
+
+
+@dataclass(frozen=True, slots=True)
 class ObservedWorkbook:
     tabs: tuple[ObservedTab, ...]
     managed_fingerprint: str
     locale: str | None = None
     time_zone: str | None = None
+    managed_objects: tuple[ObservedManagedObject, ...] = ()
+    reserve_bindings: tuple[ReserveBinding, ...] = ()
+    used_program_version_ids: tuple[str, ...] = ()
 
     @property
     def managed_tabs(self) -> tuple[ObservedTab, ...]:
@@ -38,11 +61,56 @@ class ObservedWorkbook:
     def unmanaged_tabs(self) -> tuple[ObservedTab, ...]:
         return tuple(tab for tab in self.tabs if tab not in self.managed_tabs)
 
+    @property
+    def unmanaged_objects(self) -> tuple[ObservedManagedObject, ...]:
+        return tuple(
+            item for item in self.managed_objects
+            if item.owner != "workout_tracker"
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class AddManagedObject:
+    kind: str
+    logical_key: str
+    payload: CanonicalPayload
+
+
+@dataclass(frozen=True, slots=True)
+class UpdateManagedObject:
+    kind: str
+    logical_key: str
+    payload: CanonicalPayload
+
+
+@dataclass(frozen=True, slots=True)
+class RemoveManagedObject:
+    kind: str
+    logical_key: str
+
+
+@dataclass(frozen=True, slots=True)
+class AllocateReserveId:
+    entity: str
+    slot_key: str
+
+
+ChangeOperation = (
+    AddManagedObject
+    | UpdateManagedObject
+    | RemoveManagedObject
+    | AllocateReserveId
+)
+
 
 @dataclass(frozen=True, slots=True)
 class ChangePlan:
-    blueprint: WorkbookBlueprint
+    blueprint: WorkbookBlueprint | None = None
     clean_initialization: bool = False
+    expected_fingerprint: str | None = None
+    operations: tuple[ChangeOperation, ...] = ()
+    conflicts: tuple[str, ...] = ()
+    desired_objects: tuple[ObservedManagedObject, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -50,6 +118,11 @@ class ApplyResult:
     observed: ObservedWorkbook
     changed: bool
     statuses: tuple[str, ...] = ()
+    before_fingerprint: str = ""
+    after_fingerprint: str = ""
+    operation_count: int = 0
+    operation_kinds: tuple[str, ...] = ()
+    status: str = "ok"
 
 
 class WorkbookGateway(Protocol):
