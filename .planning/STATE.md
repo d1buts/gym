@@ -5,16 +5,16 @@ milestone_name: milestone
 current_phase: 01
 current_phase_name: Standalone Workbook and Four Programs
 status: executing
-stopped_at: Completed 01-07-PLAN.md
-last_updated: "2026-07-31T00:03:48.206Z"
+stopped_at: Completed 01-08-PLAN.md
+last_updated: "2026-07-31T00:20:18.093Z"
 last_activity: 2026-07-30
-last_activity_desc: Plan 01-07 completed
+last_activity_desc: Plan 01-08 completed
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 9
-  completed_plans: 7
-  percent: 78
+  completed_plans: 8
+  percent: 89
 ---
 
 # Project State
@@ -29,29 +29,29 @@ See: .planning/PROJECT.md (updated 2026-07-25)
 ## Current Position
 
 Phase: 01 (Standalone Workbook and Four Programs) — EXECUTING
-Plan: 8 of 9
+Plan: 9 of 9
 Status: Ready to execute
-Last activity: 2026-07-30 — Plan 01-07 completed
+Last activity: 2026-07-30 — Plan 01-08 completed
 
-Progress: [████████░░] 78%
+Progress: [█████████░] 89%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 7
+- Total plans completed: 8
 - Average duration: 12 min
-- Total execution time: 81 min
+- Total execution time: 94 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| Phase 01 | 7 | 81min | 12min |
+| Phase 01 | 8 | 94min | 12min |
 
 **Recent Trend:**
 
-- Last 5 plans: 6min, 10min, 13min, 9min, 8min
+- Last 5 plans: 10min, 13min, 9min, 8min, 13min
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -62,6 +62,7 @@ Progress: [████████░░] 78%
 | Phase 01 P05 | 13min | 2 tasks | 7 files |
 | Phase 01 P06 | 9min | 2 tasks | 10 files |
 | Phase 01 P07 | 8min | 1 tasks | 4 files |
+| Phase 01 P08 | 13min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -90,6 +91,9 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 01]: Canonical reconciliation excludes provider IDs and positions from logical identity. — Only allowlisted managed fields keyed by stable kind and logical key participate in diffing.
 - [Phase 01]: Reserve UUID4 values are allocated only for missing observed slots and persisted for reuse. — Desired state remains deterministic while apply-time identity is secure and stable across reruns.
 - [Phase 01]: Unowned logical-key collisions and used program-version drift fail closed. — Conflicted plans contain no operations, preserving external ownership and immutable history.
+- [Phase 01]: Google transport uses an installed-user authorized token with the exact Sheets write scope and no Drive or service-account fallback. — Preserves D-19 least privilege and the locked D-20 dependency boundary.
+- [Phase 01]: Provider-default locale/timezone is managed drift; exact uk_UA/America/New_York is mandatory after apply. — Allows clean disposable setup while making the managed post-state exact.
+- [Phase 01]: Formula text remains registry-owned; request compilation resolves only fixed Git-owned column expressions. — Prevents caller-controlled formula injection at the Google boundary.
 
 ### Pending Todos
 
@@ -108,6 +112,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-31T00:03:41.256Z
-Stopped at: Completed 01-07-PLAN.md
+Last session: 2026-07-31T00:20:18.010Z
+Stopped at: Completed 01-08-PLAN.md
 Resume file: None
