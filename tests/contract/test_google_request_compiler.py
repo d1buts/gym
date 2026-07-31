@@ -77,7 +77,7 @@ def test_compiler_emits_only_allowlisted_requests_with_exact_masks() -> None:
         request for batch in batches for request in batch.requests
     )
 
-    assert tuple(request.keys() for request in requests) == (
+    assert tuple(tuple(request) for request in requests) == (
         ("updateSpreadsheetProperties",),
         ("addSheet",),
         ("updateCells",),
