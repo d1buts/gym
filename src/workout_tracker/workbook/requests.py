@@ -64,6 +64,58 @@ _RESERVE_ID = re.compile(
     r"[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
 )
 _COLUMN_TOKEN = re.compile(r"\{column:([a-z][a-z0-9_]*)\}")
+_TAB_TITLES = {
+    "tab:start": "Старт",
+    "tab:program": "Програма",
+    "tab:sessions": "Сесії",
+    "tab:sets": "Підходи",
+    "tab:recommendations": "Рекомендації",
+    "tab:lookups": "Довідники",
+    "tab:dashboard": "Дашборд",
+}
+_VIRTUAL_COLUMN_EXPRESSIONS = {
+    "eligible_working_set": (
+        'AND({column:status}="completed",'
+        'REGEXMATCH({column:set_role},"^(working|backoff)$"))'
+    ),
+    "movement_repetitions": (
+        'IF(OR({column:laterality}="bilateral",'
+        '{column:laterality}="alternating_total"),{column:reps_total},'
+        'IF({column:laterality}="unilateral_both",'
+        '{column:reps_left}+{column:reps_right},'
+        'IF({column:laterality}="left_only",{column:reps_left},'
+        '{column:reps_right})))'
+    ),
+    "repetitions_for_effort": (
+        'IF(OR({column:laterality}="bilateral",'
+        '{column:laterality}="alternating_total"),{column:reps_total},'
+        'IF({column:reps_left}<>"",{column:reps_left},'
+        '{column:reps_right}))'
+    ),
+    "load_kg": (
+        'IF({column:load_unit}="lb",{column:load_value}*0.45359237,'
+        '{column:load_value})'
+    ),
+    "comparable_load": (
+        'IF({column:load_basis}="per_implement",'
+        '{column:load_kg}*{column:implement_count},{column:load_kg})'
+    ),
+    "comparable_load_volume": (
+        "{column:comparable_load}*{column:movement_repetitions}"
+    ),
+    "e1rm_eligible": (
+        'AND({column:eligible_working_set},'
+        '{column:comparison_cohort_id}<>"",'
+        'OR({column:load_unit}="kg",{column:load_unit}="lb"),'
+        "{column:repetitions_for_effort}>=1,"
+        "{column:repetitions_for_effort}<=12)"
+    ),
+    "eligible_rest": (
+        'AND({column:eligible_working_set},{column:rest_seconds}<>"",'
+        '{column:exercise_variant_id}<>"",{column:equipment_id}<>"",'
+        '{column:setup_id}<>"",{column:comparison_cohort_id}<>"")'
+    ),
+}
 
 
 class GoogleRequestCompilationError(ValueError):
@@ -145,15 +197,29 @@ def _formula_text(
         raise GoogleRequestCompilationError("FORMULA_NOT_ALLOWLISTED") from exc
     if formula_version != FORMULA_VERSION or template.formula_version != formula_version:
         raise GoogleRequestCompilationError("FORMULA_VERSION_MISMATCH")
-    tab_key = _tab_key(str(payload.get("tab", template.source_tab)))
+    tab_key = _tab_key(template.source_tab)
     indexes = column_indexes.get(tab_key, {})
 
-    def replace(match: re.Match[str]) -> str:
-        field = match.group(1)
+    def resolve(field: str, stack: frozenset[str] = frozenset()) -> str:
         if field not in indexes:
-            raise GoogleRequestCompilationError("FORMULA_COLUMN_UNRESOLVED")
+            expression = _VIRTUAL_COLUMN_EXPRESSIONS.get(field)
+            if expression is None or field in stack:
+                raise GoogleRequestCompilationError(
+                    "FORMULA_COLUMN_UNRESOLVED"
+                )
+            return _COLUMN_TOKEN.sub(
+                lambda match: resolve(
+                    match.group(1),
+                    stack | {field},
+                ),
+                expression,
+            )
         column = _column_name(indexes[field])
-        return f"${column}2:${column}"
+        title = _TAB_TITLES[tab_key].replace("'", "''")
+        return f"'{title}'!${column}2:${column}"
+
+    def replace(match: re.Match[str]) -> str:
+        return resolve(match.group(1))
 
     return _COLUMN_TOKEN.sub(replace, template.text)
 
@@ -176,6 +242,18 @@ def _grid_range(
         "startColumnIndex": start_column,
         "endColumnIndex": end_column,
     }
+
+
+def _has_wildcard_field_mask(value: object) -> bool:
+    if isinstance(value, dict):
+        return any(
+            (key == "fields" and item == "*")
+            or _has_wildcard_field_mask(item)
+            for key, item in value.items()
+        )
+    if isinstance(value, (list, tuple)):
+        return any(_has_wildcard_field_mask(item) for item in value)
+    return False
 
 
 def _compile_formula(
@@ -462,7 +540,7 @@ def compile_google_requests(
             dependency = _DEPENDENCY_ORDER[operation.kind]
         else:
             raise GoogleRequestCompilationError("CHANGE_TYPE_NOT_ALLOWLISTED")
-        if "*" in repr(request):
+        if _has_wildcard_field_mask(request):
             raise GoogleRequestCompilationError("WILDCARD_FIELD_MASK_FORBIDDEN")
         compiled.append((dependency, request))
 
