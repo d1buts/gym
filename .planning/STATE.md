@@ -5,16 +5,16 @@ milestone_name: milestone
 current_phase: 01
 current_phase_name: Standalone Workbook and Four Programs
 status: executing
-stopped_at: Completed 01-06-PLAN.md
-last_updated: "2026-07-30T23:52:04.429Z"
+stopped_at: Completed 01-07-PLAN.md
+last_updated: "2026-07-31T00:03:48.206Z"
 last_activity: 2026-07-30
-last_activity_desc: Plan 01-06 completed
+last_activity_desc: Plan 01-07 completed
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 9
-  completed_plans: 6
-  percent: 67
+  completed_plans: 7
+  percent: 78
 ---
 
 # Project State
@@ -29,30 +29,30 @@ See: .planning/PROJECT.md (updated 2026-07-25)
 ## Current Position
 
 Phase: 01 (Standalone Workbook and Four Programs) — EXECUTING
-Plan: 7 of 9
+Plan: 8 of 9
 Status: Ready to execute
-Last activity: 2026-07-30 — Plan 01-06 completed
+Last activity: 2026-07-30 — Plan 01-07 completed
 
-Progress: [███████░░░] 67%
+Progress: [████████░░] 78%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 6
+- Total plans completed: 7
 - Average duration: 12 min
-- Total execution time: 73 min
+- Total execution time: 81 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| Phase 01 | 6 | 73min | 12min |
+| Phase 01 | 7 | 81min | 12min |
 
 **Recent Trend:**
 
-- Last 5 plans: 7min, 6min, 10min, 13min, 9min
-- Trend: Improving
+- Last 5 plans: 6min, 10min, 13min, 9min, 8min
+- Trend: Stable
 
 *Updated after each plan completion*
 | Phase 01 P01 | 28min | 2 tasks | 5 files |
@@ -61,6 +61,7 @@ Progress: [███████░░░] 67%
 | Phase 01 P04 | 10 min | 1 tasks | 10 files |
 | Phase 01 P05 | 13min | 2 tasks | 7 files |
 | Phase 01 P06 | 9min | 2 tasks | 10 files |
+| Phase 01 P07 | 8min | 1 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -86,6 +87,9 @@ Decisions are logged in PROJECT.md Key Decisions table.
 - [Phase 01]: Formula templates remain solely in FormulaRegistry; the workbook blueprint stores only stable formula ID and version references. — Prevents source text from entering executable formula construction.
 - [Phase 01]: A nullable program cohort never authorizes metric comparison; performed metrics require complete material cohort dimensions. — Missing variant, equipment, setup, load basis or cohort must fail closed as incomparable.
 - [Phase 01]: Dashboard order is cards, filters, cohort-safe trends and quality statuses; charts preserve NULL gaps. — Unavailable data remains visible and incompatible series are never merged.
+- [Phase 01]: Canonical reconciliation excludes provider IDs and positions from logical identity. — Only allowlisted managed fields keyed by stable kind and logical key participate in diffing.
+- [Phase 01]: Reserve UUID4 values are allocated only for missing observed slots and persisted for reuse. — Desired state remains deterministic while apply-time identity is secure and stable across reruns.
+- [Phase 01]: Unowned logical-key collisions and used program-version drift fail closed. — Conflicted plans contain no operations, preserving external ownership and immutable history.
 
 ### Pending Todos
 
@@ -104,6 +108,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-30T23:52:04.426Z
-Stopped at: Completed 01-06-PLAN.md
+Last session: 2026-07-31T00:03:41.256Z
+Stopped at: Completed 01-07-PLAN.md
 Resume file: None
