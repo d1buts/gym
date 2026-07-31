@@ -4,7 +4,6 @@ from dataclasses import dataclass
 import importlib.util
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any
 
 RUNNER_PATH = Path("scripts/run_google_uat.py")
 
@@ -53,23 +52,6 @@ class _Gateway:
     def observe(self) -> object:
         self.calls += 1
         return self.observed
-
-
-class _Counter:
-    def __init__(self) -> None:
-        self._nodeids: set[str] = set()
-
-    @property
-    def executed_count(self) -> int:
-        return len(self._nodeids)
-
-    def pytest_runtest_logreport(self, report: Any) -> None:
-        if (
-            report.when == "call"
-            and not report.skipped
-            and "google_uat" in report.keywords
-        ):
-            self._nodeids.add(report.nodeid)
 
 
 def _pytest_result(
@@ -129,7 +111,6 @@ def _invoke(
         preflight_factory=lambda *, explicit_apply: gate or _Gate(),
         gateway_factory=lambda _: gateway,
         pytest_main=_pytest_result(reports, exit_code=exit_code),
-        counter_factory=_Counter,
     )
     return status, capsys.readouterr().out, gateway
 
@@ -245,7 +226,6 @@ def test_terminal_evidence_does_not_relay_pytest_or_sensitive_values(
         preflight_factory=lambda *, explicit_apply: _Gate(),
         gateway_factory=lambda _: _Gateway(object()),
         pytest_main=noisy_pytest,
-        counter_factory=_Counter,
     )
     output = capsys.readouterr().out
 

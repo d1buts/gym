@@ -49,7 +49,11 @@ def _load_counter() -> _Counter:
     if spec is None or spec.loader is None:
         raise GoogleSheetsGatewayError("UAT_COUNTER_UNAVAILABLE")
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    sys.modules[spec.name] = module
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        sys.modules.pop(spec.name, None)
     counter_type = getattr(module, "GoogleUATExecutionCounter", None)
     if counter_type is None:
         raise GoogleSheetsGatewayError("UAT_COUNTER_UNAVAILABLE")
