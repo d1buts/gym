@@ -15,10 +15,19 @@ from workout_tracker.workbook.reconcile import canonical_payload
 
 
 REQUESTS_PATH = Path("src/workout_tracker/workbook/requests.py")
+GOOGLE_GATEWAY_PATH = Path(
+    "src/workout_tracker/adapters/google_sheets.py"
+)
+CLI_PATH = Path("src/workout_tracker/cli.py")
 
 
 def _require_request_compiler() -> None:
     assert REQUESTS_PATH.is_file(), "typed Google request compiler is missing"
+
+
+def _require_google_gateway() -> None:
+    assert GOOGLE_GATEWAY_PATH.is_file(), "guarded Google gateway is missing"
+    assert CLI_PATH.is_file(), "credential-free setup CLI is missing"
 
 
 def _plan(*operations) -> ChangePlan:
@@ -225,3 +234,220 @@ def test_unknown_changes_and_unowned_removal_fail_before_requests() -> None:
         with pytest.raises(GoogleRequestCompilationError) as caught:
             compile_google_requests(_plan(operation))
         assert caught.value.code == code
+
+
+def test_preflight_rejects_unsafe_permissions_before_authentication(
+    tmp_path: Path,
+) -> None:
+    _require_google_gateway()
+    from workout_tracker.adapters.google_sheets import (
+        GoogleSheetsGateway,
+        GoogleSheetsGatewayError,
+        GoogleUATPreflight,
+    )
+
+    secure = tmp_path / "private"
+    secure.mkdir(mode=0o700)
+    client = secure / "client.json"
+    token = secure / "token.json"
+    client.write_text('{"installed": {}}', encoding="utf-8")
+    token.write_text("{}", encoding="utf-8")
+    client.chmod(0o644)
+    token.chmod(0o600)
+    calls: list[str] = []
+    gate = GoogleUATPreflight(
+        explicit_apply=True,
+        source_alias="disposable_test",
+        expected_title="Disposable test workbook",
+        disposable=True,
+        spreadsheet_locator="test-only-locator",
+        client_secret_file=client,
+        token_file=token,
+    )
+    gateway = GoogleSheetsGateway(
+        gate,
+        credentials_loader=lambda *_: calls.append("auth"),
+        service_factory=lambda *_: calls.append("service"),
+    )
+
+    with pytest.raises(GoogleSheetsGatewayError) as caught:
+        gateway.observe()
+
+    assert caught.value.code == "CREDENTIAL_FILE_PERMISSIONS_UNSAFE"
+    assert str(caught.value) == "CREDENTIAL_FILE_PERMISSIONS_UNSAFE"
+    assert str(client) not in str(caught.value)
+    assert calls == []
+
+    client.chmod(0o600)
+    secure.chmod(0o755)
+    with pytest.raises(GoogleSheetsGatewayError) as caught:
+        gateway.observe()
+    assert caught.value.code == "CREDENTIAL_DIRECTORY_PERMISSIONS_UNSAFE"
+    assert str(secure) not in str(caught.value)
+    assert calls == []
+
+
+def test_preflight_uses_fixed_properties_and_minimum_sheets_scope_only(
+    tmp_path: Path,
+) -> None:
+    _require_google_gateway()
+    from workout_tracker.adapters.google_sheets import (
+        DESIRED_LOCALE,
+        DESIRED_TIME_ZONE,
+        MINIMUM_SHEETS_SCOPE,
+        GoogleSheetsGatewayError,
+        GoogleUATPreflight,
+    )
+
+    secure = tmp_path / "private"
+    secure.mkdir(mode=0o700)
+    client = secure / "client.json"
+    token = secure / "token.json"
+    client.write_text('{"installed": {}}', encoding="utf-8")
+    token.write_text("{}", encoding="utf-8")
+    client.chmod(0o600)
+    token.chmod(0o600)
+
+    assert DESIRED_LOCALE == "uk_UA"
+    assert DESIRED_TIME_ZONE == "America/New_York"
+    assert MINIMUM_SHEETS_SCOPE == (
+        "https://www.googleapis.com/auth/spreadsheets"
+    )
+    assert "drive" not in MINIMUM_SHEETS_SCOPE
+
+    invalid = GoogleUATPreflight(
+        explicit_apply=True,
+        source_alias="disposable_test",
+        expected_title="Disposable test workbook",
+        disposable=True,
+        spreadsheet_locator="test-only-locator",
+        client_secret_file=client,
+        token_file=token,
+        desired_locale="en_US",
+    )
+    with pytest.raises(GoogleSheetsGatewayError) as caught:
+        invalid.validate_local(require_apply=True)
+    assert caught.value.code == "DESIRED_WORKBOOK_PROPERTIES_INVALID"
+
+
+def test_gateway_repairs_property_drift_but_requires_exact_post_state(
+    tmp_path: Path,
+) -> None:
+    _require_google_gateway()
+    from workout_tracker.adapters.google_sheets import (
+        GoogleSheetsGateway,
+        GoogleSheetsGatewayError,
+        GoogleUATPreflight,
+    )
+    from workout_tracker.adapters.port import ObservedWorkbook
+
+    secure = tmp_path / "private"
+    secure.mkdir(mode=0o700)
+    client = secure / "client.json"
+    token = secure / "token.json"
+    client.write_text('{"installed": {}}', encoding="utf-8")
+    token.write_text("{}", encoding="utf-8")
+    client.chmod(0o600)
+    token.chmod(0o600)
+    gate = GoogleUATPreflight(
+        explicit_apply=True,
+        source_alias="disposable_test",
+        expected_title="Disposable test workbook",
+        disposable=True,
+        spreadsheet_locator="test-only-locator",
+        client_secret_file=client,
+        token_file=token,
+    )
+    before = ObservedWorkbook(
+        tabs=(),
+        managed_fingerprint="a" * 64,
+        locale="en_US",
+        time_zone="Etc/UTC",
+    )
+    still_drifted = ObservedWorkbook(
+        tabs=(),
+        managed_fingerprint="b" * 64,
+        locale="en_US",
+        time_zone="Etc/UTC",
+    )
+    observations = iter((before, still_drifted))
+    gateway = GoogleSheetsGateway(
+        gate,
+        observed_loader=lambda _service, _locator: next(observations),
+        credentials_loader=lambda *_: object(),
+        service_factory=lambda *_: object(),
+        batch_executor=lambda *_: None,
+    )
+    plan = _plan(
+        UpdateManagedObject(
+            kind="workbook_properties",
+            logical_key="workbook:properties",
+            payload=canonical_payload(
+                {"locale": "uk_UA", "time_zone": "America/New_York"}
+            ),
+        )
+    )
+
+    with pytest.raises(GoogleSheetsGatewayError) as caught:
+        gateway.apply(plan)
+
+    assert caught.value.code == "POST_APPLY_PROPERTIES_MISMATCH"
+
+
+def test_external_errors_and_cli_output_are_redacted(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    _require_google_gateway()
+    from workout_tracker.adapters.google_sheets import (
+        GoogleSheetsGateway,
+        GoogleSheetsGatewayError,
+        GoogleUATPreflight,
+    )
+    from workout_tracker.cli import main
+
+    assert main(["google-dry-run"]) == 0
+    dry_run = capsys.readouterr().out
+    assert "status" in dry_run
+    for forbidden in ("token", "credential", "locator", "spreadsheet"):
+        assert forbidden not in dry_run.lower()
+
+    secure = tmp_path / "private"
+    secure.mkdir(mode=0o700)
+    client = secure / "client.json"
+    token = secure / "token.json"
+    client.write_text('{"installed": {}}', encoding="utf-8")
+    token.write_text("{}", encoding="utf-8")
+    client.chmod(0o600)
+    token.chmod(0o600)
+    sensitive = "raw-provider-body-and-test-locator"
+    gate = GoogleUATPreflight(
+        explicit_apply=True,
+        source_alias="disposable_test",
+        expected_title="Disposable test workbook",
+        disposable=True,
+        spreadsheet_locator="test-only-locator",
+        client_secret_file=client,
+        token_file=token,
+    )
+    gateway = GoogleSheetsGateway(
+        gate,
+        credentials_loader=lambda *_: (_ for _ in ()).throw(
+            RuntimeError(sensitive)
+        ),
+    )
+
+    with pytest.raises(GoogleSheetsGatewayError) as caught:
+        gateway.observe()
+    assert caught.value.code == "GOOGLE_AUTH_FAILED"
+    assert sensitive not in str(caught.value)
+
+
+def test_gateway_source_has_no_drive_or_service_account_fallback() -> None:
+    _require_google_gateway()
+    source = GOOGLE_GATEWAY_PATH.read_text(encoding="utf-8").lower()
+
+    assert "service_account" not in source
+    assert "drive.googleapis" not in source
+    assert "permissions()." not in source
+    assert "files()." not in source
