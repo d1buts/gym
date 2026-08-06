@@ -1,0 +1,30 @@
+{
+  "source_path": "/home/muuser/bushuk-labs/gym/docs/specs/SPEC-GOOGLE-SHEETS-WORKBOOK.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "SPEC: Google Sheets workbook",
+  "summary": "Defines the normative Google Sheets workbook topology, capture workflow, program bootstrap, validation, formulas, generated objects, dashboard behavior, and quality gates.",
+  "scope": [
+    "Google Sheets workbook",
+    "managed tabs",
+    "mobile capture workflow",
+    "program bootstrap",
+    "validation and protection",
+    "formula contract",
+    "dashboard",
+    "named ranges",
+    "generated objects",
+    "quality gates"
+  ],
+  "cross_refs": [
+    "01 upper strength.md",
+    "02 lower strength.md",
+    "03 upper hypertrophy.md",
+    "04 lower hypertrophy.md",
+    "METRICS.md"
+  ],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

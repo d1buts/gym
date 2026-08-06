@@ -65,9 +65,3 @@
 
 1. Виконай усі три сети hip thrust.
 2. Потім виконай усі три сети TRX hamstring curl.
-
-## Навігація
-
-- [Огляд програми](./README.md)
-- [Перше тренування циклу: Upper Strength](./01%20upper%20strength.md)
-- [Правила прогресії](./05%20progression%20and%20session%20rules.md)

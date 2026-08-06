@@ -1,0 +1,61 @@
+schema_version: "1.1.0"
+ruleset_id: workout-progression
+ruleset_version: "1.1.0"
+status: specification
+
+deterministic_progression:
+  enabled_in_v1_output: true
+  comparable_session_minimum: 1
+  require_same:
+    - program_version_id
+    - exercise_variant_id
+    - comparison_cohort_id
+  qualification:
+    all_prescribed_working_sets_present: true
+    all_sets_completed: true
+    all_sets_at_top_rep_bound: true
+    actual_rir_at_or_above_prescribed_minimum: true
+    technique_gate:
+      source_field: technique_score
+      minimum: 4
+      missing: fail
+    pain_gate:
+      source_field: pain_score
+      missing: fail
+      pass_when:
+        - current_session_max_is_zero
+        - current_session_max_not_above_previous_comparable_session
+    configured_increment_required: true
+  disqualifiers:
+    - missing_required_set
+    - rir_missing
+    - rir_below_target
+    - technique_unknown
+    - technique_failed
+    - pain_unknown
+    - pain_increased
+    - comparison_cohort_changed
+    - program_version_changed
+    - increment_unverified
+
+analytical_program_change:
+  enabled_in_v1_output: true
+  comparable_session_minimum: 3
+  may_change:
+    - progression_rule
+    - prescribed_sets
+    - exercise_variant
+    - program_structure
+
+trend_evidence:
+  enabled_in_v1_output: true
+  insufficient_below: 6
+  provisional_from: 6
+  normal_from: 8
+  unit: comparable_workout_occurrences
+
+safety:
+  medical_diagnosis: forbidden
+  medication_or_treatment_advice: forbidden
+  missing_context_means_safe: false
+  acute_severe_or_persistent_pain_action: seek_qualified_medical_evaluation

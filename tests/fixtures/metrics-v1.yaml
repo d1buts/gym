@@ -1,0 +1,150 @@
+formula_version: "metrics-v1"
+cases:
+  - case_id: "working_sets_valid_kg"
+    formula_id: "working_set_count_v1"
+    input:
+      sets:
+        - {set_id: "set_a", session_status: "complete", status: "completed", valid: true, set_role: "working", laterality: "bilateral", reps_total: 5}
+    expected: {value: 1, unit: "count", status: "ok", exclusion_reasons: []}
+
+  - case_id: "working_sets_incomplete_unilateral"
+    formula_id: "working_set_count_v1"
+    input:
+      sets:
+        - {set_id: "set_b", session_status: "complete", status: "completed", valid: true, set_role: "working", laterality: "unilateral_both", reps_left: 10}
+    expected: {value: null, unit: "count", status: "invalid", exclusion_reasons: ["UNILATERAL_COMPONENT_INCOMPLETE"]}
+
+  - case_id: "working_sets_warmup"
+    formula_id: "working_set_count_v1"
+    input:
+      sets:
+        - {set_id: "set_c", session_status: "complete", status: "completed", valid: true, set_role: "warmup", laterality: "bilateral", reps_total: 8}
+    expected: {value: 0, unit: "count", status: "ok", exclusion_reasons: ["SET_ROLE_WARMUP"]}
+
+  - case_id: "working_sets_skipped_and_void"
+    formula_id: "working_set_count_v1"
+    input:
+      sets:
+        - {set_id: "set_d", session_status: "complete", status: "skipped", valid: true, set_role: "working", laterality: "bilateral"}
+        - {set_id: "set_e", session_status: "complete", status: "void", valid: true, set_role: "working", laterality: "bilateral"}
+    expected: {value: 0, unit: "count", status: "ok", exclusion_reasons: ["SET_NOT_COMPLETED"]}
+
+  - case_id: "rep_volume_unilateral"
+    formula_id: "rep_volume_v1"
+    input:
+      sets:
+        - {set_id: "set_f", session_status: "complete", status: "completed", valid: true, set_role: "working", laterality: "unilateral_both", reps_left: 10, reps_right: 10}
+    expected: {value: 20, unit: "rep", status: "ok", exclusion_reasons: []}
+
+  - case_id: "rep_volume_empty_scope"
+    formula_id: "rep_volume_v1"
+    input: {sets: []}
+    expected: {value: null, unit: "rep", status: "missing", exclusion_reasons: ["REPS_MISSING"]}
+
+  - case_id: "load_volume_valid_kg"
+    formula_id: "load_volume_v1"
+    input:
+      sets:
+        - {set_id: "set_g", session_status: "complete", status: "completed", valid: true, set_role: "working", laterality: "bilateral", reps_total: 5, load_value: "100", load_unit: "kg", load_basis: "total_external", exercise_family_id: "squat", exercise_variant_id: "back_squat", equipment_id: "barbell", setup_id: "rack", comparison_cohort_id: "coh_a", resistance_direction: "higher_is_harder"}
+    expected: {value: "500", unit: "kg·rep", status: "ok", exclusion_reasons: []}
+
+  - case_id: "load_volume_exact_lb_conversion"
+    formula_id: "load_volume_v1"
+    input:
+      sets:
+        - {set_id: "set_h", session_status: "complete", status: "completed", valid: true, set_role: "working", laterality: "bilateral", reps_total: 10, load_value: "10", load_unit: "lb", load_basis: "per_implement", implement_count: 2, exercise_family_id: "press", exercise_variant_id: "dumbbell_press", equipment_id: "dumbbell", setup_id: "flat_bench", comparison_cohort_id: "coh_b", resistance_direction: "higher_is_harder"}
+    expected: {value: "90.7", unit: "kg·rep", status: "ok", exclusion_reasons: []}
+
+  - case_id: "load_volume_missing_load"
+    formula_id: "load_volume_v1"
+    input:
+      sets:
+        - {set_id: "set_i", session_status: "complete", status: "completed", valid: true, set_role: "working", laterality: "bilateral", reps_total: 8, load_basis: "total_external", exercise_family_id: "row", exercise_variant_id: "cable_row", equipment_id: "cable", setup_id: "neutral", comparison_cohort_id: "coh_c", resistance_direction: "higher_is_harder"}
+    expected: {value: null, unit: "kg·rep", status: "missing", exclusion_reasons: ["LOAD_MISSING"]}
+
+  - case_id: "load_volume_mixed_cohort"
+    formula_id: "load_volume_v1"
+    input:
+      sets:
+        - {set_id: "set_j", session_status: "complete", status: "completed", valid: true, set_role: "working", laterality: "bilateral", reps_total: 5, load_value: "80", load_unit: "kg", load_basis: "total_external", exercise_family_id: "hinge", exercise_variant_id: "barbell_rdl", equipment_id: "barbell", setup_id: "floor", comparison_cohort_id: "coh_d", resistance_direction: "higher_is_harder"}
+        - {set_id: "set_k", session_status: "complete", status: "completed", valid: true, set_role: "working", laterality: "bilateral", reps_total: 5, load_value: "40", load_unit: "kg", load_basis: "per_implement", implement_count: 2, exercise_family_id: "hinge", exercise_variant_id: "dumbbell_rdl", equipment_id: "dumbbell", setup_id: "floor", comparison_cohort_id: "coh_e", resistance_direction: "higher_is_harder"}
+    expected: {value: null, unit: "kg·rep", status: "incomparable", exclusion_reasons: ["COHORT_MISMATCH"]}
+
+  - case_id: "load_volume_machine_level"
+    formula_id: "load_volume_v1"
+    input:
+      sets:
+        - {set_id: "set_l", session_status: "complete", status: "completed", valid: true, set_role: "working", laterality: "bilateral", reps_total: 12, load_value: "8", load_unit: "machine_level", load_basis: "machine_stack", exercise_family_id: "leg_curl", exercise_variant_id: "seated_leg_curl", equipment_id: "machine_1", setup_id: "seat_4", comparison_cohort_id: "coh_f", resistance_direction: "higher_is_harder"}
+    expected: {value: "96", unit: "machine_level·rep", status: "ok", exclusion_reasons: []}
+
+  - case_id: "maximum_load_decimal_tie"
+    formula_id: "maximum_comparable_load_v1"
+    input:
+      sets:
+        - {set_id: "set_m", session_status: "complete", status: "completed", valid: true, set_role: "working", laterality: "bilateral", reps_total: 5, load_value: "2.05", load_unit: "kg", load_basis: "total_external", exercise_family_id: "curl", exercise_variant_id: "barbell_curl", equipment_id: "barbell", setup_id: "standing", comparison_cohort_id: "coh_g", resistance_direction: "higher_is_harder"}
+    expected: {value: "2", unit: "kg", status: "ok", exclusion_reasons: []}
+
+  - case_id: "maximum_load_bodyweight"
+    formula_id: "maximum_comparable_load_v1"
+    input:
+      sets:
+        - {set_id: "set_n", session_status: "complete", status: "completed", valid: true, set_role: "working", laterality: "bilateral", reps_total: 8, load_basis: "bodyweight_only", exercise_family_id: "pullup", exercise_variant_id: "pullup", equipment_id: "bar", setup_id: "pronated", comparison_cohort_id: "coh_h", resistance_direction: "higher_is_harder"}
+    expected: {value: null, unit: "kg", status: "not_applicable", exclusion_reasons: ["BODYWEIGHT_ONLY"]}
+
+  - case_id: "e1rm_one_rep"
+    formula_id: "epley_e1rm_v1"
+    input:
+      sets:
+        - {set_id: "set_o", session_status: "complete", status: "completed", valid: true, set_role: "working", laterality: "bilateral", reps_total: 1, load_value: "100", load_unit: "kg", load_basis: "total_external", exercise_family_id: "press", exercise_variant_id: "bench_press", equipment_id: "barbell", setup_id: "flat_bench", comparison_cohort_id: "coh_i", resistance_direction: "higher_is_harder"}
+    expected: {value: "103.3", unit: "kg", status: "ok", exclusion_reasons: []}
+
+  - case_id: "e1rm_twelve_reps_without_rir"
+    formula_id: "epley_e1rm_v1"
+    input:
+      sets:
+        - {set_id: "set_p", session_status: "complete", status: "completed", valid: true, set_role: "working", laterality: "bilateral", reps_total: 12, load_value: "100", load_unit: "kg", load_basis: "total_external", exercise_family_id: "press", exercise_variant_id: "bench_press", equipment_id: "barbell", setup_id: "flat_bench", comparison_cohort_id: "coh_i", resistance_direction: "higher_is_harder"}
+    expected: {value: "140", unit: "kg", status: "ok", exclusion_reasons: []}
+
+  - case_id: "e1rm_thirteen_reps"
+    formula_id: "epley_e1rm_v1"
+    input:
+      sets:
+        - {set_id: "set_q", session_status: "complete", status: "completed", valid: true, set_role: "working", laterality: "bilateral", reps_total: 13, load_value: "100", load_unit: "kg", load_basis: "total_external", exercise_family_id: "press", exercise_variant_id: "bench_press", equipment_id: "barbell", setup_id: "flat_bench", comparison_cohort_id: "coh_i", resistance_direction: "higher_is_harder"}
+    expected: {value: null, unit: "kg", status: "not_applicable", exclusion_reasons: ["E1RM_REPS_OUT_OF_RANGE"]}
+
+  - case_id: "e1rm_assistance"
+    formula_id: "epley_e1rm_v1"
+    input:
+      sets:
+        - {set_id: "set_r", session_status: "complete", status: "completed", valid: true, set_role: "working", laterality: "bilateral", reps_total: 6, load_value: "30", load_unit: "kg", load_basis: "assistance", exercise_family_id: "pullup", exercise_variant_id: "assisted_pullup", equipment_id: "assist_machine", setup_id: "neutral", comparison_cohort_id: "coh_j", resistance_direction: "lower_is_harder"}
+    expected: {value: null, unit: "kg", status: "not_applicable", exclusion_reasons: ["ASSISTED_LOAD", "LOAD_BASIS_UNSUPPORTED_FOR_E1RM", "RESISTANCE_DIRECTION_UNSUPPORTED"]}
+
+  - case_id: "rir_summary_missing"
+    formula_id: "rir_summary_v1"
+    input:
+      sets:
+        - {set_id: "set_s", session_status: "complete", status: "completed", valid: true, set_role: "working", laterality: "bilateral", reps_total: 8}
+    expected: {value: null, unit: "rir", status: "missing", exclusion_reasons: ["RIR_MISSING"]}
+
+  - case_id: "rest_summary_paired_set"
+    formula_id: "rest_summary_v1"
+    input:
+      sets:
+        - {set_id: "set_t", session_status: "complete", status: "completed", valid: true, set_role: "working", laterality: "bilateral", reps_total: 8, rest_seconds: 120, rest_basis: "same_exercise_elapsed", block_format: "paired", exercise_family_id: "row", exercise_variant_id: "chest_supported_row", equipment_id: "bench", setup_id: "incline", comparison_cohort_id: "coh_k"}
+    expected: {value: 120, unit: "s", status: "ok", exclusion_reasons: []}
+
+  - case_id: "invalid_source_record"
+    formula_id: "data_quality_status_v1"
+    input:
+      sets:
+        - {set_id: "set_u", session_status: "complete", status: "completed", valid: false, set_role: "working", laterality: "bilateral", reps_total: 8}
+    expected: {value: null, unit: "status", status: "invalid", exclusion_reasons: ["SOURCE_RECORD_QUARANTINED"]}
+
+  - case_id: "session_completion"
+    formula_id: "session_completion_v1"
+    input:
+      session: {status: "complete", expected_set_count: 2}
+      sets:
+        - {set_id: "set_v", session_status: "complete", status: "completed", valid: true, set_role: "working", laterality: "bilateral", reps_total: 5}
+        - {set_id: "set_w", session_status: "complete", status: "completed", valid: true, set_role: "backoff", laterality: "bilateral", reps_total: 8}
+    expected: {value: "complete", unit: "status", status: "ok", exclusion_reasons: []}

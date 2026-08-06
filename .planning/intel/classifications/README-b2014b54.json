@@ -1,0 +1,26 @@
+{
+  "source_path": "/home/muuser/bushuk-labs/gym/4-day upper lower program/README.md",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "Four-Day Upper/Lower Training Program",
+  "summary": "Описує чотириденну програму верх/низ, формат paired sets, тижневий розклад, позначення та орієнтовний тренувальний обсяг.",
+  "scope": [
+    "four-day upper/lower training program",
+    "paired sets",
+    "weekly schedule",
+    "training notation",
+    "weekly training volume"
+  ],
+  "cross_refs": [
+    "./01%20upper%20strength.md",
+    "./02%20lower%20strength.md",
+    "./03%20upper%20hypertrophy.md",
+    "./04%20lower%20hypertrophy.md",
+    "./05%20progression%20and%20session%20rules.md",
+    "../gym%20equipment/exercises%20by%20category.md"
+  ],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

@@ -1,0 +1,23 @@
+{
+  "source_path": "/home/muuser/bushuk-labs/gym/docs/architecture/ADR-001-authority-boundaries.md",
+  "type": "ADR",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "ADR-001: Межі джерел правди",
+  "summary": "Визначає authoritative ownership тренувальних фактів, програмних приписів, виконуваних правил і локальних аналітичних проєкцій між Google Sheets, Git та локальним сховищем.",
+  "scope": [
+    "Google Sheets",
+    "Git",
+    "локальне сховище",
+    "тренувальні факти",
+    "версійовані програмні приписи",
+    "виконувані правила",
+    "аналітичні проєкції"
+  ],
+  "cross_refs": [
+    "ADR-003"
+  ],
+  "locked": true,
+  "precedence": null,
+  "notes": ""
+}

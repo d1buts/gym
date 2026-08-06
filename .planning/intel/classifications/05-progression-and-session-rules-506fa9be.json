@@ -1,0 +1,21 @@
+{
+  "source_path": "/home/muuser/bushuk-labs/gym/4-day upper lower program/05 progression and session rules.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "Progression and Session Rules",
+  "summary": "Визначає детерміновані правила прогресії навантаження, обмеження paired sets, 60-хвилинну структуру тренування та пріоритети скорочення вправ.",
+  "scope": [
+    "детермінована прогресія",
+    "силові вправи",
+    "гіпертрофійні вправи",
+    "ізоляційні вправи",
+    "paired sets",
+    "60-хвилинна сесія",
+    "пріоритет скорочення"
+  ],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

@@ -1,0 +1,32 @@
+{
+  "source_path": "/home/muuser/bushuk-labs/gym/docs/architecture/SYNC_PROTOCOL.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "Протокол синхронізації Google Sheets → SQLite",
+  "summary": "Нормативний контракт визначає безпечне, відтворюване й атомарне перенесення authoritative даних Google Sheets до локального SQLite-дзеркала.",
+  "scope": [
+    "Google Sheets",
+    "SQLite mirror",
+    "sync runs",
+    "raw snapshots",
+    "entity bundles",
+    "quarantine",
+    "normalized staging",
+    "OAuth profiles",
+    "audit logs",
+    "CLI exit codes"
+  ],
+  "cross_refs": [
+    "./ADR-001-authority-boundaries.md",
+    "./ADR-002-python-sqlite-v1.md",
+    "../specs/SPEC-CHATGPT-WORKOUT-CAPTURE.md",
+    "./DATA_MODEL.md",
+    "../../config/schema.yaml",
+    "./METRICS.md",
+    "./SECURITY_AND_BACKUP.md"
+  ],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

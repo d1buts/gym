@@ -1,0 +1,24 @@
+{
+  "source_path": "/home/muuser/bushuk-labs/gym/gym equipment/all gym exercises.md",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "Повний список вправ, доступних у спортзалі",
+  "summary": "Майстер-список вправ і практично відмінних варіацій, доступних із наявним у спортзалі обладнанням.",
+  "scope": [
+    "вправи",
+    "варіації вправ",
+    "обладнання спортзалу",
+    "кардіотренажери",
+    "силові тренажери",
+    "вільні ваги",
+    "вправи з вагою тіла",
+    "тренувальні комплекси"
+  ],
+  "cross_refs": [
+    "./gym%20equipment%20list.md"
+  ],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

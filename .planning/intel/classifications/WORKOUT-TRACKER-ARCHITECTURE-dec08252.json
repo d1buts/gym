@@ -1,0 +1,38 @@
+{
+  "source_path": "/home/muuser/bushuk-labs/gym/WORKOUT_TRACKER_ARCHITECTURE.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "Workout Tracker: архітектура Spreadsheet-first продукту",
+  "summary": "Системний контракт Spreadsheet-first workout tracker описує межі джерел правди, workbook, ChatGPT capture, синхронізацію, аналітику, рекомендації, приватність і відновлення.",
+  "scope": [
+    "Google Spreadsheet workbook",
+    "ChatGPT plugin/MCP tools",
+    "workout program bootstrap",
+    "authoritative operational records",
+    "coherent snapshots",
+    "SQLite analytical mirror",
+    "metrics and dashboard",
+    "progression and recommendations",
+    "privacy, backup, and restore"
+  ],
+  "cross_refs": [
+    "docs/architecture/README.md",
+    "docs/prd/PRD-GOOGLE-SHEETS-WORKOUT-COACH.md",
+    "docs/specs/SPEC-GOOGLE-SHEETS-WORKBOOK.md",
+    "config/schema.yaml",
+    "docs/architecture/ADR-001-authority-boundaries.md",
+    "docs/architecture/ADR-003-spreadsheet-first-product.md",
+    "docs/specs/SPEC-CHATGPT-WORKOUT-CAPTURE.md",
+    "docs/architecture/DATA_MODEL.md",
+    "docs/architecture/SYNC_PROTOCOL.md",
+    "docs/architecture/METRICS.md",
+    "config/progression-rules.yaml",
+    "docs/architecture/SECURITY_AND_BACKUP.md",
+    "docs/architecture/ADR-002-python-sqlite-v1.md",
+    ".planning/ROADMAP.md"
+  ],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

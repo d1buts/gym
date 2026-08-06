@@ -1,0 +1,23 @@
+{
+  "source_path": "/home/muuser/bushuk-labs/gym/gym equipment/exercise categories.md",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "Категорії вправ для цього спортзалу",
+  "summary": "Визначає систему категоризації вправ за м’язовими групами, руховими патернами, фізичними якостями й типами обладнання.",
+  "scope": [
+    "категорії вправ",
+    "м’язові групи",
+    "рухові патерни",
+    "фізичні якості",
+    "типи обладнання",
+    "правила рознесення вправ"
+  ],
+  "cross_refs": [
+    "./all%20gym%20exercises.md",
+    "./exercises%20by%20category.md"
+  ],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

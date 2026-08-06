@@ -1,0 +1,25 @@
+{
+  "source_path": "/home/muuser/bushuk-labs/gym/docs/architecture/ADR-003-spreadsheet-first-product.md",
+  "type": "ADR",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "ADR-003: Spreadsheet-first продукт і контрольований запис через ChatGPT",
+  "summary": "Фіксує Google Spreadsheet як основний продукт і визначає контрольований, версійований запис тренувань через ChatGPT із допоміжним Python/SQLite контуром.",
+  "scope": [
+    "Google Spreadsheet",
+    "ChatGPT tools",
+    "workout capture",
+    "write-back",
+    "recommendations",
+    "authorization boundaries",
+    "Python analytics",
+    "SQLite mirror"
+  ],
+  "cross_refs": [
+    "ADR-001",
+    "ADR-002"
+  ],
+  "locked": true,
+  "precedence": null,
+  "notes": ""
+}
